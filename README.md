@@ -1,2 +1,6 @@
-# STM32_CAN_DVCS_Project
+# STM32\_CAN\_DVCS\_Project
+
 基于STM32和CAN总线的分布式车载控制系统
+##项目概述
+	这是一个基于STM32和CAN总线的分布式车载控制系统，主要用于初学者学习，该系统包含三个ECU单元。
+

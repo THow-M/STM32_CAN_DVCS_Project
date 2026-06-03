@@ -1,55 +1,61 @@
-# Prerequisites
-*.d
-
-# Object files
+# Keil工程文件
+*.uvprojx
+*.uvoptx
+*.uvguix.*
+*.dep
+*.crf
 *.o
-*.ko
-*.obj
+*.d
+*.axf
+*.lnp
+*.sct
+*.scvd
+
+# 编译输出
+*.lst
+*.map
+*.htm
+*.build_log.htm
+*.hex
+*.bin
 *.elf
 
-# Linker output
-*.ilk
-*.map
-*.exp
+# 调试文件
+*.cdb
+*.ini
+*.dbgconf
 
-# Precompiled Headers
-*.gch
-*.pch
+# 临时文件
+*.bak
+*.tmp
+*~
+*.swp
+*.swo
 
-# Libraries
-*.lib
-*.a
-*.la
-*.lo
+# 系统文件
+.DS_Store
+Thumbs.db
+desktop.ini
 
-# Shared objects (inc. Windows DLLs)
-*.dll
-*.so
-*.so.*
-*.dylib
+# IDE配置文件
+.vscode/
+.idea/
+*.workspace
 
-# Executables
-*.exe
-*.out
-*.app
-*.i*86
-*.x86_64
-*.hex
+# 本地配置文件
+config.h
+user_config.h
 
-# Debug files
-*.dSYM/
-*.su
-*.idb
-*.pdb
+# 库文件（已包含在libraries目录）
+!Library/
+!Start/
 
-# Kernel Module Compile Results
-*.mod*
-*.cmd
-.tmp_versions/
-modules.order
-Module.symvers
-Mkfile.old
-dkms.conf
-
-# debug information files
-*.dwo
+# 但保留这些重要文件
+!*.c
+!*.h
+!*.md
+!*.txt
+!*.pdf
+!*.png
+!*.jpg
+!*.svg
