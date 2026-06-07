@@ -4,11 +4,12 @@
 #include "Key.h"
 #include "LED.h"
 #include "Serial.h"
+#include "MyCAN.h"
 
 int main(void) 
 {
-    
-
+	
+	
     while(1) 
 	{
         
