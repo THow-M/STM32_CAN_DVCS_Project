@@ -1,6 +1,8 @@
 #include "stm32f10x.h"                  // Device header
 #include "Delay.h"
 
+uint16_t LED1_Count;
+
 /**
   * 函    数：LED初始化
   * 参    数：无
@@ -165,4 +167,15 @@ void LED_RunningWater(uint8_t direction, uint16_t delay)
     }
     
     Delay_ms(delay);
+}
+
+void LED_Tick(void)
+{
+	LED1_Count ++;
+	
+	if(LED1_Count >999)
+	{
+		LED1_Count = 0;
+	}
+	
 }

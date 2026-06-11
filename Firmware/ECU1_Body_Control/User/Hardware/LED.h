@@ -8,5 +8,10 @@ void LED1_Turn(void);
 void LED2_ON(void);
 void LED2_OFF(void);
 void LED2_Turn(void);
+void LED3_ON(void);
+void LED3_OFF(void);
+void LED3_Turn(void);
+void LED_RunningWater(uint8_t direction, uint16_t delay);
+void LED_Tick(void);
 
 #endif
