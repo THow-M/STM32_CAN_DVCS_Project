@@ -16,9 +16,16 @@ int main(void)
 	Serial_Init(115200);
 	MyCAN_Init(CAN_BAUD_500K);
 	
+	uint16_t Num1 = 0;
     while(1) 
 	{
-        
+        if(Key_Check(3,KEY_SINGLE) || Key_Check(3,KEY_REPEAT))
+		{
+			Num1++;
+		}
+		
+		OLED_ShowNum(1,1,Num1,5);
+		OLED_ShowNum(2,1,Num1,5);
     }
 }
 

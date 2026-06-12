@@ -2,12 +2,13 @@
 #include "Delay.h"
 #include "Key.h"
 
-uint8_t Key_Flag;
-
 // 按键参数
-#define DEBOUNCE_MS     20      // 消抖时间（ms）
-#define LONG_PRESS_MS   800     // 长按判定时间（ms）
-#define HOLD_INTERVAL_MS 200    // 连按触发间隔（ms）
+#define KEY_TIME_DOUBLE     200      // 双击判定时间（ms）
+#define KEY_TIME_LONG       2000     // 长按判定时间（ms）
+#define KEY_TIME_REPEAT     100      // 重复触发间隔（ms）
+
+uint8_t Key_Flag[KEY_COUNT];         //标志位
+
 
 /**
   * 函    数：按键初始化
@@ -22,94 +23,67 @@ void Key_Init(void)
 	/*GPIO初始化*/
 	GPIO_InitTypeDef GPIO_InitStructure;
 	GPIO_InitStructure.GPIO_Mode = GPIO_Mode_IPU;
-	GPIO_InitStructure.GPIO_Pin = KEY1_PIN | KEY2_PIN | KEY3_PIN | KEY4_PIN;
+	GPIO_InitStructure.GPIO_Pin = KEY1_PIN | KEY2_PIN;
+	GPIO_InitStructure.GPIO_Speed = GPIO_Speed_50MHz;
+	GPIO_Init(GPIOB, &GPIO_InitStructure);
+	
+	GPIO_InitStructure.GPIO_Mode = GPIO_Mode_IPD;
+	GPIO_InitStructure.GPIO_Pin = KEY3_PIN | KEY4_PIN;
 	GPIO_InitStructure.GPIO_Speed = GPIO_Speed_50MHz;
 	GPIO_Init(GPIOB, &GPIO_InitStructure);
 }
 
-/** 函  数：按键扫描
-  * 参  数：mode 扫描模式，1为连按，0为点按
-  * 返回值：按下按键的键码
-  */
-uint8_t Key_Scan(uint8_t mode)
-{
-    static uint8_t key_up = 1;   // 按键松开标志
-    
-    if (mode) key_up = 1;        // 支持连按
-    
-    if (key_up && (KEY1 == KEY_PRESS || KEY2 == KEY_PRESS || KEY3 == KEY_PRESS || KEY4 == KEY_PRESS))
-	{
-        Delay_ms(10);
-        key_up = 0;
-        
-        if (KEY1 == KEY_PRESS)  return KEY1_PRES;
-        if (KEY2 == KEY_PRESS)  return KEY2_PRES;
-        if (KEY3 == KEY_PRESS)  return KEY3_PRES;
-        if (KEY4 == KEY_PRESS)  return KEY4_PRES;
-    }
-	else if (KEY1 == 1 && KEY2 == 1 && KEY3 == 1 && KEY4 == 1)
-	{
-        key_up = 1;
-    }
-    
-    return 0;   // 无按键按下
-}
-
 /**
-  * 函    数：按键获取键码
-  * 参    数：无
-  * 返 回 值：
-  * 注意事项：
+  * 函    数：获取按键状态
+  * 参    数：n 按键编号
+  * 返 回 值：按键电平
   */
-uint8_t Key_GetState(void)
+uint8_t Key_GetState(uint8_t n)
 {
-	if(KEY1 == 0)
+	if(n == KEY_NUM_1)
 	{
-		return KEY_PRESS;
+		if(KEY1 == 0)
+		{
+			return KEY_PRESS;
+		}
 	}
+	else if(n == KEY_NUM_2)
+	{
+		if(KEY2 == 0)
+		{
+			return KEY_PRESS;
+		}
+	}
+	else if(n == KEY_NUM_3)
+	{
+		if(KEY3 == 1)
+		{
+			return KEY_PRESS;
+		}
+	}
+	else if(n == KEY_NUM_4)
+	{
+		if(KEY4 == 1)
+		{
+			return KEY_PRESS;
+		}
+	}
+	
 	return KEY_RELEASE;
 }
 
-// 按键长按检测
-uint8_t Key_LongPress(Key_Type key, uint16_t long_press_time)
-{
-    static uint32_t press_start_time[4] = {0};
-    static uint8_t long_press_flag[4] = {0};
-    
-    uint8_t index = key - 1;   // KEY_1 -> 0
-    
-    if (Key_GetState() == KEY_PRESS)
-	{
-        if (press_start_time[index] == 0)
-		{
-            press_start_time[index] = HAL_GetTick();
-            long_press_flag[index] = 0;
-        }
-		else if (!long_press_flag[index] && 
-                   (HAL_GetTick() - press_start_time[index] > long_press_time))
-		{
-            long_press_flag[index] = 1;
-            return 1;   // 长按事件
-        }
-    } else {
-        press_start_time[index] = 0;
-        long_press_flag[index] = 0;
-    }
-    
-    return 0;
-}
-
-/** 函  数：检查指定指定标志位
-  * 参  数：
-  * 返回值：
+/** 函  数：检查指定按键标志位
+  * 参  数：n 要检查的按键编号
+  * 参  数：Flag 要检查的标志位类型
+  * 返回值：1，标志事件发生 0，标志事件未发生
   */
-uint8_t Key_Check(uint8_t Flag)
+uint8_t Key_Check(uint8_t n, uint8_t Flag)
 {
-	if(Key_Flag & Flag)
+	if(Key_Flag[n] & Flag)
 	{
 		if(Flag != KEY_HOLD)
 		{
-			Key_Flag &= ~Flag;
+			Key_Flag[n] &= ~Flag;
 		}
 		
 		return 1;
@@ -117,35 +91,111 @@ uint8_t Key_Check(uint8_t Flag)
 	return 0;
 }
 
+/** 函    数：按键扫描
+  * 参    数：无
+  * 返 回 值：无
+  */
 void Key_Tick(void)
 {
-	static uint8_t Count;
-	static uint8_t CurrState, PrevState;
+	static uint8_t Count, i;
+	static uint8_t CurrState[KEY_COUNT], PrevState[KEY_COUNT];
+	static uint8_t S[KEY_COUNT];
+	static uint16_t Time[KEY_COUNT];
+	
+	for(i = 0; i < KEY_COUNT; i++)
+	{
+		if(Time > 0)
+		{
+			Time[i] --;
+		}
+	}
 	
 	Count ++;
 	if(Count >= 20)
 	{
 		Count = 0;
-		PrevState = Key_GetState();
-		CurrState = Key_GetState();
 		
-		if(CurrState == KEY_PRESS)
+		for(i = 0; i < KEY_COUNT; i++)
 		{
-			Key_Flag |= KEY_HOLD;
+			PrevState[i] = CurrState[i];
+			CurrState[i] = Key_GetState(i);
+			
+			if(CurrState[i] == KEY_PRESS)
+			{
+				Key_Flag[i] |= KEY_HOLD;
+			}
+			else
+			{
+				Key_Flag[i] &= ~KEY_HOLD;
+			}
+			
+			if(PrevState[i] == KEY_RELEASE && CurrState[i] == KEY_PRESS)
+			{
+				Key_Flag[i] |= KEY_DOWN;
+			}
+			
+			if(PrevState[i] == KEY_PRESS && CurrState[i] == KEY_RELEASE)
+			{
+				Key_Flag[i] |= KEY_UP;
+			}
+			
+			//状态转移
+			if(S[i] == 0)   //空闲
+			{
+				if(CurrState[i] == KEY_PRESS)
+				{
+					Time[i] = KEY_TIME_LONG;
+					S[i] = 1;
+				}
+			}
+			else if(S[i] == 1)   //按键已按下
+			{
+				if(CurrState[i] == KEY_RELEASE)
+				{
+					Time[i] = KEY_TIME_DOUBLE;
+					S[i] = 2;
+				}
+				else if(Time[i] == 0)
+				{
+					Time[i] = KEY_TIME_REPEAT;
+					Key_Flag[i] |= KEY_LONG;
+					S[i] = 4;
+				}
+			}
+			else if(S[i] == 2)   //按键已松开
+			{
+				if(CurrState[i] == KEY_PRESS)
+				{
+					Key_Flag[i] |= KEY_DOUBLE;
+					S[i] = 3;
+				}
+				else if(Time[i] == 0)
+				{
+					Key_Flag[i] |= KEY_SINGLE;
+					S[i] = 0;
+				}
+			}
+			else if(S[i] == 3)   //按键已双击
+			{
+				if(CurrState[i] == KEY_RELEASE)
+				{
+					S[i] = 0;
+				}
+			}
+			else if(S[i] == 4)   //按键已长按
+			{
+				if(CurrState[i] == KEY_RELEASE)
+				{
+					S[i] = 0;
+				}
+				else if(Time[i] == 0)
+				{
+					Time[i] = KEY_TIME_REPEAT;
+					Key_Flag[i] |= KEY_REPEAT;
+					S[i] = 4;
+				}
+			}
 		}
-		else
-		{
-			Key_Flag &= ~KEY_HOLD;
-		}
-		
-		if(PrevState == KEY_RELEASE && CurrState == KEY_PRESS)
-		{
-			Key_Flag |= KEY_DOWN;
-		}
-		
-		if(PrevState == KEY_PRESS && CurrState == KEY_RELEASE)
-		{
-			Key_Flag |= KEY_UP;
-		}
+
 	}
 }
