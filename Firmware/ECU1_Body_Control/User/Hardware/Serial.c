@@ -47,8 +47,8 @@ void Serial_Init(uint32_t baudrate)
 	NVIC_InitTypeDef NVIC_InitStructure;
 	NVIC_InitStructure.NVIC_IRQChannel = USART1_IRQn;
 	NVIC_InitStructure.NVIC_IRQChannelCmd = ENABLE;
-	NVIC_InitStructure.NVIC_IRQChannelPreemptionPriority = 2;		//指定NVIC线路的抢占优先级为2
-	NVIC_InitStructure.NVIC_IRQChannelSubPriority = 0;		//指定NVIC线路的响应优先级为0
+	NVIC_InitStructure.NVIC_IRQChannelPreemptionPriority = 3;		//指定NVIC线路的抢占优先级为2
+	NVIC_InitStructure.NVIC_IRQChannelSubPriority = 3;		//指定NVIC线路的响应优先级为0
 	NVIC_Init(&NVIC_InitStructure);
 	
 	/*USART使能*/
