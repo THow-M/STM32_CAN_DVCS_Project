@@ -2,7 +2,7 @@
 #define __KEY_H
 
 //按键数量
-#define KEY_COUNT           4
+#define KEY_COUNT        4
 
 //按键编号
 #define KEY_NUM_1        0
@@ -27,6 +27,13 @@
 #define KEY3            GPIO_ReadInputDataBit(KEY_PORT, KEY3_PIN)
 #define KEY4            GPIO_ReadInputDataBit(KEY_PORT, KEY4_PIN)
 
+//按键按下
+#define KEY1_PRESS      1
+#define KEY2_PRESS      2
+#define KEY3_PRESS      3
+#define KEY4_PRESS      4
+
+
 //仿状态机 标志位位掩码
 #define KEY_HOLD        0x01
 #define KEY_DOWN        0x02
@@ -37,9 +44,9 @@
 #define KEY_REPEAT      0x40
 
 void Key_Init(void);
-uint8_t Key_Scan(uint8_t mode);
 uint8_t Key_GetState(uint8_t n);
-uint8_t Key_Check(uint8_t n, uint8_t Flag);
-void Key_Tick(void);
+//uint8_t Key_Check(uint8_t n, uint8_t Flag);
+uint8_t Key_Check(uint8_t Flag);
+void Key_Scan(void);
 
 #endif

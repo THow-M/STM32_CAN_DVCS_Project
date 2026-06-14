@@ -25,20 +25,22 @@ uint32_t heartbeat_time[NODE_NUM] = {0};
 
 // 菜单项
 const char *menu_items[] = {
-    "1. 远程控制电机",
-    "2. 显示传感器数据",
-    "3. 系统状态监控",
-    "4. CAN通信测试",
-    "5. 参数设置"
+    "1.Motor Ctrl",                      //远程控制电机
+    "2.Sensor View",                     //显示传感器数据
+    "3.System Mon",                      //系统状态监控
+    "4.CAN Test",                        //CAN通信测试
+    //"5.Settings"                         //参数设置
 };
 #define MENU_COUNT (sizeof(menu_items) / sizeof(menu_items[0]))
 
+//系统初始化
 void System_Init(void)
 {
     // 初始化外设
     LED_Init();
     Key_Init();
     OLED_Init();
+	Timer_Init();
     Serial_Init(DEBUG_BAUDRATE);
     MyCAN_Init(CAN_BAUDRATE);
     
@@ -64,9 +66,8 @@ void System_Init(void)
     // 显示启动界面
     OLED_Clear();
     OLED_ShowString(1, 1, "Vehicle Control");
-    OLED_ShowString(2, 1, "ECU1-Body Control");
+    OLED_ShowString(2, 1, "ECU1-BodyControl");
     OLED_ShowString(4, 1, "Initializing...");
-    //OLED_Refresh();
     
     Delay_ms(2000);
     
@@ -75,46 +76,57 @@ void System_Init(void)
     printf("System initialized successfully!\r\n");
 }
 
-/*// 主菜单显示
-void Show_MainMenu(void) {
+// 主菜单显示
+void Show_MainMenu(void)
+{
     OLED_Clear();
-    OLED_ShowString(0, 0, "=== Main Menu ===");
+    OLED_ShowString(1, 1, "=== Main Menu ==");
+	Delay_ms(500);
+	OLED_Clear();
     
-    for(uint8_t i = 0; i < MENU_COUNT; i++) {
-        if(i == selected_menu) {
-            OLED_ShowString(0, 2 + i, ">");
+    for(uint8_t i = 0; i < MENU_COUNT; i++)
+	{
+        if(i == selected_menu)
+		{
+            OLED_ShowString(1 + i, 1, ">");
         }
-        OLED_ShowString(6, 2 + i, menu_items[i]);
+        OLED_ShowString(1 + i , 2, (char*)menu_items[i]);
     }
-    
-    OLED_Refresh();
 }
 
 // 按键处理
-void Key_Handler(void) {
-    uint8_t key_value = KEY_Scan(0);
+void Key_Handler(void)
+{
+
+	uint8_t key_value = Key_Check(KEY_SINGLE);
     
-    if(key_value) {
-        switch(key_value) {
-            case KEY1_PRES:  // 上
-                if(selected_menu > 0) {
+    if(key_value)
+	{
+		
+        switch(key_value)
+		{
+            case KEY1_PRESS:  // 上
+                if(selected_menu > 0)
+				{
                     selected_menu--;
-                } else {
+                }
+				else
+				{
                     selected_menu = MENU_COUNT - 1;
                 }
                 Show_MainMenu();
                 break;
                 
-            case KEY2_PRES:  // 下
+            case KEY2_PRESS:  // 下
                 selected_menu = (selected_menu + 1) % MENU_COUNT;
                 Show_MainMenu();
                 break;
                 
-            case KEY3_PRES:  // 确定
-                Execute_Menu(selected_menu);
+            case KEY3_PRESS:  // 确定
+                //Execute_Menu(selected_menu);
                 break;
                 
-            case KEY4_PRES:  // 返回/取消
+            case KEY4_PRESS:  // 返回/取消
                 system_state = SYSTEM_READY;
                 Show_MainMenu();
                 break;
@@ -122,7 +134,7 @@ void Key_Handler(void) {
     }
 }
 
-// 执行菜单功能
+/*// 执行菜单功能
 void Execute_Menu(uint8_t menu_index) {
     switch(menu_index) {
         case 0:  // 远程控制电机
@@ -152,10 +164,13 @@ int main(void)
 {
 	System_Init();
 	
+    Show_MainMenu();
+	
 	printf("System started. Press keys to navigate menu.\r\n");
 	
     while(1) 
 	{
+		Key_Handler();
         
     }
 }
@@ -164,7 +179,7 @@ void TIM2_IRQHandler(void)
 {
 	if (TIM_GetITStatus(TIM2, TIM_IT_Update) == SET)
 	{
-		Key_Tick();
+		Key_Scan();
 		TIM_ClearITPendingBit(TIM2, TIM_IT_Update);
 	}
 }

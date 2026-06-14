@@ -77,7 +77,7 @@ uint8_t Key_GetState(uint8_t n)
   * 参  数：Flag 要检查的标志位类型
   * 返回值：1，标志事件发生 0，标志事件未发生
   */
-uint8_t Key_Check(uint8_t n, uint8_t Flag)
+/*uint8_t Key_Check(uint8_t n, uint8_t Flag)
 {
 	if(Key_Flag[n] & Flag)
 	{
@@ -89,13 +89,46 @@ uint8_t Key_Check(uint8_t n, uint8_t Flag)
 		return 1;
 	}
 	return 0;
+}*/
+
+/** 函  数：检查指定按键标志位
+  * 参  数：Flag 要检查的标志位类型
+  * 返回值：KEYx_PRESS 发生检查事件的按键
+  */
+uint8_t Key_Check(uint8_t Flag)
+{
+	for(uint8_t i = 0; i < KEY_COUNT; i++)
+	{
+		if(Key_Flag[i] & Flag)
+		{
+			if(Flag != KEY_HOLD)
+			{
+				Key_Flag[i] &= ~Flag;
+			}
+			
+			switch(i)
+			{
+				case 0:
+					return KEY1_PRESS;
+				case 1:
+					return KEY2_PRESS;
+				case 2:
+					return KEY3_PRESS;
+				case 3:
+					return KEY4_PRESS;
+			}
+			
+		}
+	}
+
+	return 0;
 }
 
 /** 函    数：按键扫描
   * 参    数：无
   * 返 回 值：无
   */
-void Key_Tick(void)
+void Key_Scan(void)
 {
 	static uint8_t Count, i;
 	static uint8_t CurrState[KEY_COUNT], PrevState[KEY_COUNT];
@@ -104,7 +137,7 @@ void Key_Tick(void)
 	
 	for(i = 0; i < KEY_COUNT; i++)
 	{
-		if(Time > 0)
+		if(Time[i] > 0)
 		{
 			Time[i] --;
 		}
