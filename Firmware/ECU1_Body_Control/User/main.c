@@ -81,7 +81,7 @@ void Show_MainMenu(void)
 {
     OLED_Clear();
     OLED_ShowString(1, 1, "=== Main Menu ==");
-	Delay_ms(500);
+	Delay_ms(300);
 	OLED_Clear();
     
     for(uint8_t i = 0; i < MENU_COUNT; i++)
@@ -123,7 +123,7 @@ void Key_Handler(void)
                 break;
                 
             case KEY3_PRESS:  // 确定
-                //Execute_Menu(selected_menu);
+                Execute_Menu(selected_menu);
                 break;
                 
             case KEY4_PRESS:  // 返回/取消
@@ -134,31 +134,101 @@ void Key_Handler(void)
     }
 }
 
-/*// 执行菜单功能
-void Execute_Menu(uint8_t menu_index) {
-    switch(menu_index) {
+// 执行菜单功能
+void Execute_Menu(uint8_t menu_index)
+{
+    switch(menu_index)
+	{
         case 0:  // 远程控制电机
             Remote_Control_Mode();
             break;
             
         case 1:  // 显示传感器数据
-            Sensor_Display_Mode();
+            //Sensor_Display_Mode();
             break;
             
         case 2:  // 系统状态监控
-            System_Monitor_Mode();
+            //System_Monitor_Mode();
             break;
             
         case 3:  // CAN通信测试
-            CAN_Test_Mode();
+            //CAN_Test_Mode();
             break;
             
         case 4:  // 参数设置
-            Parameter_Setting_Mode();
+            //Parameter_Setting_Mode();
             break;
     }
 }
-*/
+
+// 远程控制电机模式
+void Remote_Control_Mode(void)
+{
+    uint8_t speed = 0;
+    uint8_t direction = 1;  // 1=正转
+    
+    system_state = REMOTE_CONTROL;
+    
+    while(system_state == REMOTE_CONTROL)
+	{
+        // 处理按键
+        uint8_t key = Key_Check(KEY_SINGLE);
+        if(key == KEY4_PRESS)
+		{
+            system_state = SYSTEM_READY;
+            break;
+        }
+        
+        // 按键控制速度
+        if(key == KEY1_PRESS)
+		{   // 加速
+            if(speed < 100) speed += 10;
+        }
+		else if(key == KEY2_PRESS)
+		{   // 减速
+            if(speed > 0) speed -= 10;
+        }
+		else if(key == KEY3_PRESS)
+		{   // 切换方向
+            direction = (direction == 1) ? 2 : 1;
+        }
+        
+        // 发送速度指令
+        if(HAL_GetTick() - last_can_send_time > 100)
+		{
+            last_can_send_time = HAL_GetTick();
+            MyCAN_Send_SpeedCmd(speed * 10, direction, 50);
+            
+            printf("Send SpeedCmd: %d RPM, Direction: %s\r\n", 
+                   speed * 10, (direction == 1) ? "Forward" : "Reverse");
+        }
+        
+        // 显示控制界面
+        OLED_Clear();
+        //OLED_ShowString(1, 1, "Remote Control Mode");
+        OLED_ShowString(1, 1, "Speed:");
+        OLED_ShowNum(1, 7, speed, 3);
+        OLED_ShowString(1, 10, "%");
+        
+        OLED_ShowString(2, 1, "Dir:");
+        if(direction == 1)
+		{
+            OLED_ShowString(2, 5, "Forward");
+        }
+		else
+		{
+            OLED_ShowString(2, 5, "Reverse");
+        }
+        
+        OLED_ShowString(3, 1, "1:V+");
+        OLED_ShowString(3, 9, "2:V-");
+        OLED_ShowString(4, 1, "3:Dir");
+        OLED_ShowString(4, 9, "4:Back");
+        
+        Delay_ms(50);
+    }
+}
+
 
 int main(void) 
 {
