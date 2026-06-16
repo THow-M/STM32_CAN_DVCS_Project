@@ -49,6 +49,7 @@ void Remote_Control_Mode(void);
 void Sensor_Display_Mode(void);
 void System_Monitor_Mode(void);
 void CAN_Test_Mode(void);
+void Parameter_Setting_Mode(void);
 
 //按键处理
 void Key_Handler(void);

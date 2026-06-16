@@ -30,7 +30,7 @@ const char *menu_items[] = {
     "2.Sensor View",                     //显示传感器数据
     "3.System Mon",                      //系统状态监控
     "4.CAN Test",                        //CAN通信测试
-    //"5.Settings"                         //参数设置
+    "5.Settings"                         //参数设置
 };
 
 #define MENU_COUNT (sizeof(menu_items) / sizeof(menu_items[0]))
@@ -42,7 +42,6 @@ const char *menu_items[] = {
 void System_Init(void)
 {
     // 初始化外设
-	GPIO_PinRemapConfig(GPIO_Remap_SWJ_JTAGDisable, ENABLE);
     LED_Init();
     Key_Init();
     OLED_Init();
@@ -93,14 +92,20 @@ void Show_MainMenu(void)
 	OLED2_Clear();
     OLED2_ShowString(1, 1, "====Main Menu===");
     
-    for(uint8_t i = 0; i < MENU_COUNT; i++)
+    for(uint8_t i = 0; i < MENU_COUNT - 1; i++)
 	{
         if(i == selected_menu)
 		{
-            OLED_ShowString(1 + i, 1, ">");
+			OLED_ShowString(1 + i, 1, ">");
         }
         OLED_ShowString(1 + i , 2, (char*)menu_items[i]);
     }
+	//由于屏幕空间不够，第五项放到第二个oled上显示
+	if(selected_menu == MENU_COUNT - 1)
+	{
+		OLED2_ShowString(2, 1, ">");
+	}
+	OLED2_ShowString(2 , 2, (char*)menu_items[MENU_COUNT - 1]);
 }
 
 /** 函  数：按键处理
@@ -171,7 +176,7 @@ void Execute_Menu(uint8_t menu_index)
             break;
             
         case 4:  // 参数设置
-            //Parameter_Setting_Mode();
+            Parameter_Setting_Mode();
             break;
     }
 }
@@ -429,6 +434,80 @@ void CAN_Test_Mode(void)
     }
 }
 
+/** 函  数：参数设置模式
+  * 参  数：无
+  * 返回值：无
+  */
+void Parameter_Setting_Mode(void)
+{
+    system_state = PARAM_SETTING;
+    
+    // 参数默认值
+    static uint8_t can_baudrate = 2;  // 0=125k, 1=250k, 2=500k, 3=1M
+    static uint8_t heartbeat_period = 1;  // 秒
+    
+    uint8_t selected_param = 0;
+    const char *baudrate_names[] = {"125k", "250k", "500k", "1M"};
+    
+    while(system_state == PARAM_SETTING)
+	{
+        uint8_t key = Key_Check(KEY_SINGLE);
+        
+        switch(key)
+		{
+            case KEY1_PRESS:  // 上
+                if(selected_param > 0) selected_param--;
+                break;
+                
+            case KEY2_PRESS:  // 下
+                if(selected_param < 1) selected_param++;
+                break;
+                
+            case KEY3_PRESS:  // 修改参数
+                if(selected_param == 0)
+				{
+                    can_baudrate = (can_baudrate + 1) % 4;
+                }
+				else if(selected_param == 1)
+				{
+                    heartbeat_period = (heartbeat_period % 10) + 1;
+                }
+                break;
+                
+            case KEY4_PRESS:  // 保存并退出
+                // 保存参数到EEPROM（这里简化处理）
+                printf("Parameters saved: Baudrate=%s, Heartbeat=%ds\r\n", 
+                       baudrate_names[can_baudrate], heartbeat_period);
+                system_state = SYSTEM_READY;
+                return;
+        }
+        
+        // 显示参数设置界面
+        OLED_Clear();
+		OLED2_Clear();
+        OLED2_ShowString(1, 1, "ParameterSetting");
+        
+        // CAN波特率
+        OLED_ShowString(1, 2, "CANBaudrate:");
+        if(selected_param == 0) OLED_ShowString(1, 1, ">");
+		
+        OLED_ShowString(1, 13, (char*)baudrate_names[can_baudrate]);
+        
+        // 心跳周期
+        OLED_ShowString(2, 2, "Heart Period:");
+        if(selected_param == 1) OLED_ShowString(2, 1, ">");
+		
+        OLED_ShowNum(3, 4, heartbeat_period, 2);
+        OLED_ShowString(3, 6, "s");
+        
+        OLED2_ShowString(2, 1, "Key1/2: Select");
+        OLED2_ShowString(3, 1, "Key3: Change");
+        OLED2_ShowString(4, 1, "Key4: Save&Back");
+		
+        Delay_ms(50);
+    }
+}
+
 
 
 int main(void) 
@@ -439,11 +518,7 @@ int main(void)
 	
 	printf("System started. Press keys to navigate menu.\r\n");
 	
-	Serial_SendString("--- Direct Serial Test ---\r\n");
-    Serial_SendByte('O');
-    Serial_SendByte('K');
-    Serial_SendByte('\r');
-    Serial_SendByte('\n');
+	
 	
     while(1) 
 	{
