@@ -89,7 +89,7 @@ typedef struct
 
 //函数声明
 void MyCAN_Init(CAN_BaudRate baudrate);
-void MyCAN_Send_Message(uint32_t ID,uint8_t Len,uint8_t* Data);
+uint8_t MyCAN_Send_Message(uint32_t ID,uint8_t Len,uint8_t* Data);
 uint8_t MyCAN_Receive_Message(uint32_t* ID, uint8_t* Len, uint8_t* Data);
 void MyCAN_Send_Heartbeat(uint8_t node_id, uint8_t status, uint8_t error_code, uint32_t uptime);
 void MyCAN_Send_SpeedCmd(int16_t speed, uint8_t direction, uint8_t acceleration);

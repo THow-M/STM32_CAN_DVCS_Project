@@ -48,6 +48,7 @@ void Execute_Menu(uint8_t menu_index);
 void Remote_Control_Mode(void);
 void Sensor_Display_Mode(void);
 void System_Monitor_Mode(void);
+void CAN_Test_Mode(void);
 
 //按键处理
 void Key_Handler(void);

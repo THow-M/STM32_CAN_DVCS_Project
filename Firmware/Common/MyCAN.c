@@ -100,7 +100,7 @@ void MyCAN_Init(CAN_BaudRate baudrate)
   * 参  数：Data 要发送的数据
   * 返回值：无
   */
-void MyCAN_Send_Message(uint32_t ID,uint8_t Len,uint8_t* Data)
+uint8_t MyCAN_Send_Message(uint32_t ID,uint8_t Len,uint8_t* Data)
 {
 	uint8_t mailbox;
 	uint32_t timeout = 0;
@@ -117,6 +117,10 @@ void MyCAN_Send_Message(uint32_t ID,uint8_t Len,uint8_t* Data)
 	
 	mailbox = CAN_Transmit(CAN1,&TxMessage);
 	
+	if(mailbox == CAN_TxStatus_NoMailBox)
+	{
+        return 0;  // 发送失败
+    }
 	
 	while(CAN_TransmitStatus(CAN1,mailbox) != CAN_TxStatus_Ok)
 	{
@@ -124,6 +128,7 @@ void MyCAN_Send_Message(uint32_t ID,uint8_t Len,uint8_t* Data)
 		if(timeout > 100000)
 			break;
 	}
+	return 1;
 }
 
 /** 函  数：接收CAN报文

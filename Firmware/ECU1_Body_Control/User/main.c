@@ -42,6 +42,7 @@ const char *menu_items[] = {
 void System_Init(void)
 {
     // 初始化外设
+	GPIO_PinRemapConfig(GPIO_Remap_SWJ_JTAGDisable, ENABLE);
     LED_Init();
     Key_Init();
     OLED_Init();
@@ -166,7 +167,7 @@ void Execute_Menu(uint8_t menu_index)
             break;
             
         case 3:  // CAN通信测试
-            //CAN_Test_Mode();
+            CAN_Test_Mode();
             break;
             
         case 4:  // 参数设置
@@ -285,9 +286,9 @@ void Sensor_Display_Mode(void)
         OLED_ShowSignedNum(4, 5, sensor_data.yaw, 4);
         OLED_ShowString(4, 9, "deg");
         
-        OLED2_ShowString(1, 1, "Voltage:");
-        OLED2_ShowNum(1, 9, sensor_data.voltage, 4);
-        OLED2_ShowString(1, 13, "mV");
+        OLED2_ShowString(2, 1, "Voltage:");
+        OLED2_ShowNum(2, 9, sensor_data.voltage, 4);
+        OLED2_ShowString(2, 13, "mV");
         
         OLED2_ShowString(4, 1, "Key4: Back");
         
@@ -362,6 +363,72 @@ void System_Monitor_Mode(void)
     }
 }
 
+/** 函  数：CAN通信测试模式
+  * 参  数：无
+  * 返回值：无
+  */
+void CAN_Test_Mode(void)
+{
+    static uint8_t test_counter = 0;
+    system_state = CAN_TEST;
+    
+    while(system_state == CAN_TEST)
+	{
+        // 处理按键
+        uint8_t key = Key_Check(KEY_SINGLE);
+        if(key == KEY4_PRESS)
+		{
+            system_state = SYSTEM_READY;
+            break;
+        }
+        
+        // 发送测试数据
+        if(key == KEY3_PRESS)
+		{
+            test_counter++;
+            uint8_t test_data[8] = {test_counter, 0xAA, 0x55, 0x01, 0x02, 0x03, 0x04, 0x05};
+            
+            if(MyCAN_Send_Message(0x123, 8, test_data))
+			{
+                printf("Test data sent: %d\r\n", test_counter);
+            }
+			else
+			{
+                printf("Failed to send test data\r\n");
+            }
+        }
+        
+        // 显示CAN测试界面
+        OLED_Clear();
+		OLED2_Clear();
+        OLED2_ShowString(1, 1, "CAN Test Mode");
+        OLED_ShowString(1, 1, "Test Counter:");
+        OLED_ShowNum(1, 14, test_counter, 3);
+        
+        OLED2_ShowString(3, 1, "Key3: Send Test");
+        OLED2_ShowString(4, 1, "Key4: Back");
+        
+        // 显示接收到的CAN报文
+        uint32_t can_id;
+        uint8_t can_data[8];
+        uint8_t can_len;
+        
+        if(MyCAN_Receive_Message(&can_id, can_data, &can_len))
+		{
+            OLED_ShowString(2, 1, "RX ID:");
+            OLED_ShowHexNum(2, 7, can_id, 3);
+            
+            OLED_ShowString(3, 1, "Data:");
+            for(uint8_t i = 0; i < can_len && i < 8; i++)
+			{
+                OLED_ShowHexNum( 3, 6 + i, can_data[i], 8);
+            }
+        }
+        
+        Delay_ms(50);
+    }
+}
+
 
 
 int main(void) 
@@ -371,6 +438,12 @@ int main(void)
     Show_MainMenu();
 	
 	printf("System started. Press keys to navigate menu.\r\n");
+	
+	Serial_SendString("--- Direct Serial Test ---\r\n");
+    Serial_SendByte('O');
+    Serial_SendByte('K');
+    Serial_SendByte('\r');
+    Serial_SendByte('\n');
 	
     while(1) 
 	{
@@ -384,6 +457,8 @@ void TIM2_IRQHandler(void)
 	if (TIM_GetITStatus(TIM2, TIM_IT_Update) == SET)
 	{
 		Key_Scan();
+		
+		
 		TIM_ClearITPendingBit(TIM2, TIM_IT_Update);
 	}
 }
