@@ -46,6 +46,7 @@ void Execute_Menu(uint8_t menu_index);
 
 //各模式处理函数
 void Remote_Control_Mode(void);
+void Sensor_Display_Mode(void);
 
 //按键处理
 void Key_Handler(void);

@@ -6,6 +6,7 @@
 #include "Timer.h"
 #include "Delay.h"
 #include "OLED.h"
+#include "OLED2.h"
 #include "Key.h"
 #include "LED.h"
 
@@ -31,15 +32,20 @@ const char *menu_items[] = {
     "4.CAN Test",                        //CAN通信测试
     //"5.Settings"                         //参数设置
 };
+
 #define MENU_COUNT (sizeof(menu_items) / sizeof(menu_items[0]))
 
-//系统初始化
+/** 函  数：系统初始化
+  * 参  数：无
+  * 返回值：无
+  */
 void System_Init(void)
 {
     // 初始化外设
     LED_Init();
     Key_Init();
     OLED_Init();
+	OLED2_Init();
 	Timer_Init();
     Serial_Init(DEBUG_BAUDRATE);
     MyCAN_Init(CAN_BAUDRATE);
@@ -76,13 +82,15 @@ void System_Init(void)
     printf("System initialized successfully!\r\n");
 }
 
-// 主菜单显示
+/** 函  数：主菜单显示
+  * 参  数：无
+  * 返回值：无
+  */
 void Show_MainMenu(void)
 {
     OLED_Clear();
-    OLED_ShowString(1, 1, "=== Main Menu ==");
-	Delay_ms(300);
-	OLED_Clear();
+	OLED2_Clear();
+    OLED2_ShowString(1, 1, "====Main Menu===");
     
     for(uint8_t i = 0; i < MENU_COUNT; i++)
 	{
@@ -94,7 +102,10 @@ void Show_MainMenu(void)
     }
 }
 
-// 按键处理
+/** 函  数：按键处理
+  * 参  数：无
+  * 返回值：无
+  */
 void Key_Handler(void)
 {
 
@@ -134,7 +145,10 @@ void Key_Handler(void)
     }
 }
 
-// 执行菜单功能
+/** 函  数：执行菜单功能
+  * 参  数：当前所选菜单索引
+  * 返回值：无
+  */
 void Execute_Menu(uint8_t menu_index)
 {
     switch(menu_index)
@@ -144,7 +158,7 @@ void Execute_Menu(uint8_t menu_index)
             break;
             
         case 1:  // 显示传感器数据
-            //Sensor_Display_Mode();
+            Sensor_Display_Mode();
             break;
             
         case 2:  // 系统状态监控
@@ -161,7 +175,10 @@ void Execute_Menu(uint8_t menu_index)
     }
 }
 
-// 远程控制电机模式
+/** 函  数：远程控制电机模式
+  * 参  数：无
+  * 返回值：无
+  */
 void Remote_Control_Mode(void)
 {
     uint8_t speed = 0;
@@ -205,7 +222,8 @@ void Remote_Control_Mode(void)
         
         // 显示控制界面
         OLED_Clear();
-        //OLED_ShowString(1, 1, "Remote Control Mode");
+		OLED2_Clear();
+        OLED2_ShowString(1, 1, "RemoteControlMod");
         OLED_ShowString(1, 1, "Speed:");
         OLED_ShowNum(1, 7, speed, 3);
         OLED_ShowString(1, 10, "%");
@@ -220,14 +238,63 @@ void Remote_Control_Mode(void)
             OLED_ShowString(2, 5, "Reverse");
         }
         
-        OLED_ShowString(3, 1, "1:V+");
-        OLED_ShowString(3, 9, "2:V-");
-        OLED_ShowString(4, 1, "3:Dir");
-        OLED_ShowString(4, 9, "4:Back");
+        OLED2_ShowString(2, 1, "Key1:V+");
+        OLED2_ShowString(2, 9, "Key2:V-");
+        OLED2_ShowString(3, 1, "Key3:Change Dir");
+        OLED2_ShowString(4, 1, "Key4:Back");
         
         Delay_ms(50);
     }
 }
+
+/** 函  数：传感器数据显示模式
+  * 参  数：无
+  * 返回值：无
+  */
+void Sensor_Display_Mode(void)
+{
+    system_state = SENSOR_DISPLAY;
+    
+    while(system_state == SENSOR_DISPLAY)
+	{
+        // 处理按键
+        if(Key_Check(KEY_SINGLE) == KEY4_PRESS)
+		{
+            system_state = SYSTEM_READY;
+            break;
+        }
+        
+        // 显示传感器数据
+        OLED_Clear();
+		OLED2_Clear();
+        OLED2_ShowString(1, 1, "Sensor Data");
+        
+        OLED_ShowString(1, 1, "Distance:");
+        OLED_ShowNum(1, 10, sensor_data.distance, 4);
+        OLED_ShowString(1, 14, "mm");
+        
+        OLED_ShowString(2, 1, "Pitch:");
+        OLED_ShowSignedNum(2, 7, sensor_data.pitch, 4);
+        OLED_ShowString(2, 11, "deg");
+        
+        OLED_ShowString(3, 1, "Roll:");
+        OLED_ShowSignedNum(3, 6, sensor_data.roll, 4);
+        OLED_ShowString(3, 10, "deg");
+        
+        OLED_ShowString(4, 1, "Yaw:");
+        OLED_ShowSignedNum(4, 5, sensor_data.yaw, 4);
+        OLED_ShowString(4, 9, "deg");
+        
+        OLED2_ShowString(1, 1, "Voltage:");
+        OLED2_ShowNum(1, 9, sensor_data.voltage, 4);
+        OLED2_ShowString(1, 13, "mV");
+        
+        OLED2_ShowString(4, 1, "Key4: Back");
+        
+        Delay_ms(100);
+    }
+}
+
 
 
 int main(void) 
