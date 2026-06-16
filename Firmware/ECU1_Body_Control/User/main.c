@@ -162,7 +162,7 @@ void Execute_Menu(uint8_t menu_index)
             break;
             
         case 2:  // 系统状态监控
-            //System_Monitor_Mode();
+            System_Monitor_Mode();
             break;
             
         case 3:  // CAN通信测试
@@ -290,6 +290,73 @@ void Sensor_Display_Mode(void)
         OLED2_ShowString(1, 13, "mV");
         
         OLED2_ShowString(4, 1, "Key4: Back");
+        
+        Delay_ms(100);
+    }
+}
+
+/** 函  数：系统状态监控模式
+  * 参  数：无
+  * 返回值：无
+  */
+void System_Monitor_Mode(void)
+{
+    system_state = SYSTEM_MONITOR;
+    
+    while(system_state == SYSTEM_MONITOR)
+	{
+        // 处理按键
+        if(Key_Check(KEY_SINGLE) == KEY4_PRESS)
+		{
+            system_state = SYSTEM_READY;
+            break;
+        }
+        
+        // 检查心跳状态
+        uint32_t current_time = HAL_GetTick();
+        for(uint8_t i = 0; i < NODE_NUM; i++)
+		{
+            if(current_time - heartbeat_time[i] > HEARTBEAT_TIMEOUT)
+			{
+                heartbeat_status[i] = 0;  // 离线
+            }
+			else
+			{
+                heartbeat_status[i] = 1;  // 在线
+            }
+        }
+        
+        // 显示系统状态
+        OLED_Clear();
+		OLED2_Clear();
+        OLED2_ShowString(1, 1, "System Monitor");
+        
+        OLED2_ShowString(2, 1, "ECU1:");
+        OLED2_ShowString(2, 6, heartbeat_status[0] ? "Online" : "Offline");
+        
+        OLED2_ShowString(3, 1, "ECU2:");
+        OLED2_ShowString(3, 6, heartbeat_status[1] ? "Online" : "Offline");
+        if(heartbeat_status[1])
+		{
+            OLED2_ShowString(4, 3, "Speed:");
+            OLED2_ShowNum(4, 9, motor_status.actual_speed, 4);
+        }
+        
+        OLED_ShowString(1, 1, "ECU3:");
+        OLED_ShowString(1, 6, heartbeat_status[2] ? "Online" : "Offline");
+        
+        OLED_ShowString(2, 3, "MotorTemp:");
+        OLED_ShowNum(2, 13, motor_status.temperature, 3);
+        OLED_ShowString(2, 16, "C");
+        
+        OLED_ShowString(3, 3, "Motor_I:");
+        OLED_ShowNum(3, 11, motor_status.current, 4);
+        OLED_ShowString(3, 15, "mA");
+        
+        OLED_ShowString(4, 3, "MotorStatus:");
+        OLED_ShowHexNum(4, 15, motor_status.status, 2);
+        
+        //OLED2_ShowString(4, 1, "Key4: Back");
         
         Delay_ms(100);
     }
