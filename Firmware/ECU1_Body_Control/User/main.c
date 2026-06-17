@@ -556,7 +556,7 @@ void Heartbeat_Manager(void)
 }
 
 /** 函  数：CAN数据处理
-  * 参  数：id 要处理的数据
+  * 参  数：id 要处理的数据的ID，len 要处理的数据的长度，data 要处理的数据
   * 返回值：无
   */
 void CAN_Data_Handler(uint32_t id, uint8_t len, uint8_t* data)
@@ -665,6 +665,39 @@ int main(void)
 	{
 		Key_Handler();
         
+    }
+}
+
+/** 函  数：错误处理
+  * 参  数：id 要处理的数据
+  * 返回值：无
+  */
+void Error_Handler(void)
+{
+    // LED快速闪烁表示错误
+    static uint32_t last_blink = 0;
+    
+    if(HAL_GetTick() - last_blink > 100)
+	{
+        last_blink = HAL_GetTick();
+        LED1_Turn();
+        LED2_Turn();
+        LED3_Turn();
+        //LED4_Turn();
+    }
+    
+    // 尝试恢复
+    static uint32_t error_start = 0;
+    if(error_start == 0)
+	{
+        error_start = HAL_GetTick();
+    }
+    
+    // 5秒后尝试重启
+    if(HAL_GetTick() - error_start > 5000)
+	{
+        printf("System reset after error...\r\n");
+        NVIC_SystemReset();
     }
 }
 

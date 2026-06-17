@@ -61,6 +61,6 @@ void Heartbeat_Manager(void);
 void CAN_Data_Handler(uint32_t id, uint8_t len, uint8_t* data);
 
 //错误处理
-
+void Error_Handler(void);
 
 #endif
