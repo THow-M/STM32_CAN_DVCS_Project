@@ -54,6 +54,13 @@ void Parameter_Setting_Mode(void);
 //按键处理
 void Key_Handler(void);
 
-//
+//心跳管理
+void Heartbeat_Manager(void);
+
+//CAN数据处理
+
+
+//错误处理
+
 
 #endif

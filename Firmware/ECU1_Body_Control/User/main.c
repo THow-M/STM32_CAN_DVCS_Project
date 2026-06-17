@@ -508,6 +508,52 @@ void Parameter_Setting_Mode(void)
     }
 }
 
+/** 函  数：心跳包管理
+  * 参  数：无
+  * 返回值：无
+  */
+void Heartbeat_Manager(void)
+{
+    static uint32_t last_heartbeat_send = 0;
+    uint32_t current_time = HAL_GetTick();
+    
+    // 发送心跳包
+    if(current_time - last_heartbeat_send > HEARTBEAT_PERIOD)
+	{
+        last_heartbeat_send = current_time;
+        MyCAN_Send_Heartbeat(NODE_ID, STATUS_NORMAL, ERROR_NONE, current_time / 1000);
+        
+        // LED指示
+        LED1_Turn();
+    }
+    
+    // 检查其他节点心跳
+    static uint32_t last_check_time = 0;
+    if(current_time - last_check_time > 1000)
+	{  // 每秒检查一次
+        last_check_time = current_time;
+        
+        for(uint8_t i = 0; i < NODE_NUM; i++)
+		{
+            if(i == NODE_ID - 1) continue;  // 跳过自己
+            
+            if(current_time - heartbeat_time[i] > HEARTBEAT_TIMEOUT)
+			{
+                printf("Warning: Node %d is offline!\r\n", i + 1);
+                
+                // LED报警
+                if(i == 1) LED2_ON();  // ECU2离线
+                if(i == 2) LED3_ON();  // ECU3离线
+            }
+			else
+			{
+                if(i == 1) LED2_OFF();
+                if(i == 2) LED3_OFF();
+            }
+        }
+    }
+}
+
 
 
 int main(void) 
