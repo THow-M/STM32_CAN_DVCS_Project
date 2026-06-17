@@ -55,7 +55,7 @@ void Parameter_Setting_Mode(void);
 void Key_Handler(void);
 
 //心跳管理
-void Heartbeat_Manager(void);
+void HeartBeat_Manager(void);
 
 //CAN数据处理
 void CAN_Data_Handler(uint32_t id, uint8_t len, uint8_t* data);

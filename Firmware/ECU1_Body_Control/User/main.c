@@ -513,7 +513,7 @@ void Parameter_Setting_Mode(void)
   * 参  数：无
   * 返回值：无
   */
-void Heartbeat_Manager(void)
+void HeartBeat_Manager(void)
 {
     static uint32_t last_heartbeat_send = 0;
     uint32_t current_time = HAL_GetTick();
@@ -602,6 +602,15 @@ void CAN_Data_Handler(uint32_t id, uint8_t len, uint8_t* data)
             break;
         }
 		
+		case MSG_ID_SYSTEM_CTRL:
+		{
+			SystemCtrl_Data *ctrl = (SystemCtrl_Data*)data;
+			printf("SystemCtrl: cmd=%d\r\n", ctrl->command);
+			//根据需要处理
+			
+			break;
+		}
+		
 		case MSG_ID_ERROR_REPORT:
 		{
 			ErrorReport_Data *err = (ErrorReport_Data*)data;
@@ -664,7 +673,63 @@ int main(void)
     while(1) 
 	{
 		Key_Handler();
+		
+		HeartBeat_Manager();
+		
+		// CAN数据处理
+        uint32_t can_id;
+        uint8_t can_data[8];
+        uint8_t can_len;
         
+        if(MyCAN_Receive_Message(&can_id, &can_len, can_data))
+		{
+            CAN_Data_Handler(can_id, can_len, can_data);
+        }
+        
+		// 系统状态机
+        switch(system_state)
+		{
+			case SYSTEM_IDLE:
+			{
+				//LED1慢闪表示等待
+				static uint32_t idle_blink = 0;
+				if(HAL_GetTick() - idle_blink > 1000)
+				{
+					idle_blink = HAL_GetTick();
+					LED1_Turn();
+				}
+				break;
+			}
+			
+            case SYSTEM_READY:
+            {
+				//LED1常亮表示就绪
+				LED1_ON();
+				LED2_OFF();
+				LED3_OFF();
+				//LED4_OFF();
+                break;
+			}
+            
+            case REMOTE_CONTROL:
+            case SENSOR_DISPLAY:
+            case SYSTEM_MONITOR:
+            case CAN_TEST:
+            case PARAM_SETTING:
+                // 这些状态在各自的函数中处理
+                break;
+                
+            case SYSTEM_ERROR:
+                // 错误处理
+                Error_Handler();
+                break;
+			
+			default:
+				//未知状态，复位系统
+				printf("Unknown system state! Resetting...\r\n");
+				NVIC_SystemReset();
+				break;
+        }
     }
 }
 
