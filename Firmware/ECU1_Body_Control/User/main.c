@@ -9,6 +9,7 @@
 #include "OLED2.h"
 #include "Key.h"
 #include "LED.h"
+#include <string.h>
 
 // 全局变量
 System_State system_state = SYSTEM_IDLE;
@@ -551,6 +552,100 @@ void Heartbeat_Manager(void)
                 if(i == 2) LED3_OFF();
             }
         }
+    }
+}
+
+/** 函  数：CAN数据处理
+  * 参  数：id 要处理的数据
+  * 返回值：无
+  */
+void CAN_Data_Handler(uint32_t id, uint8_t len, uint8_t* data)
+{
+    switch(id)
+	{
+        case MSG_ID_HEARTBEAT:
+		{
+            HeartBeat_Data *hb = (HeartBeat_Data*)data;
+            if(hb->node_id >= 1 && hb->node_id <= NODE_NUM)
+			{
+                heartbeat_time[hb->node_id - 1] = HAL_GetTick();
+            }
+            break;
+        }
+            
+        case MSG_ID_MOTOR_STATUS:
+		{
+            memcpy(&motor_status, data, sizeof(MotorStatus_Data));
+            
+            // 如果电机状态异常，报警
+            if(motor_status.status != 0)
+			{
+                printf("Motor Error: Status=0x%02X\r\n", motor_status.status);
+                //LED4_ON();
+            }
+			else
+			{
+                //LED4_OFF();
+            }
+            break;
+        }
+            
+        case MSG_ID_SENSOR_DATA:
+		{
+            memcpy(&sensor_data, data, sizeof(Sensor_Data));
+            
+            // 如果距离过近，报警
+            if(sensor_data.distance < 200)
+			{  // 20cm
+                printf("Warning: Distance too close! %dmm\r\n", sensor_data.distance);
+            }
+            break;
+        }
+		
+		case MSG_ID_ERROR_REPORT:
+		{
+			ErrorReport_Data *err = (ErrorReport_Data*)data;
+			//打印错误报告
+			printf("Error Report from Node %d: type=0x%02X, code=0x%04X, time=%u\r\n",
+					err->node_id, err->error_type, err->error_code, err->timestamp);
+			
+			switch(err->error_type)
+			{
+				case ERROR_NONE:
+					printf("No Error on node %d\r\n",err->node_id);
+					break;
+				case ERROR_CAN_COMM:
+					printf("CAN communication error on node %d\r\n",err->node_id);
+					break;
+				case ERROR_MOTOR_OVERHEAT:
+					printf("Motor overheat on node %d\r\n",err->node_id);
+					break;
+				case ERROR_SENSOR_FAIL:
+					printf("Sensor failure on node %d\r\n",err->node_id);
+					break;
+				case ERROR_VOLTAGE_LOW:
+					printf("Voltage low on node %d\r\n",err->node_id);
+					break;
+				case ERROR_ENCODER_FAIL:
+					printf("Encoder failure on node %d\r\n",err->node_id);
+					break;
+				default:
+					printf("Unknown error type\r\n");
+					break;
+					
+			}
+		}
+            
+        default:
+		{	// 未知报文处理
+			printf("Unknown CAN message: ID=0x%03x, Len=%d, Data=",id,len);
+			for(uint8_t i = 0;i < len;i ++)
+			{
+				printf("%02x",data[i]);
+			}
+			printf("\r\n");
+			break;
+		}
     }
 }
 

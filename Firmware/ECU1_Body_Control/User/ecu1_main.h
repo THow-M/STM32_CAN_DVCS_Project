@@ -58,7 +58,7 @@ void Key_Handler(void);
 void Heartbeat_Manager(void);
 
 //CAN数据处理
-
+void CAN_Data_Handler(uint32_t id, uint8_t len, uint8_t* data);
 
 //错误处理
 
