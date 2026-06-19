@@ -72,10 +72,11 @@ void System_Init(void)
     
     // 显示启动界面
     OLED_Clear();
-    OLED_ShowString(1, 1, "Vehicle Control");
-    OLED_ShowString(2, 1, "ECU1-BodyControl");
-    OLED_ShowString(4, 1, "Initializing...");
-    
+    OLED_ShowString(0, 0, "Vehicle Control", OLED_8X16);
+    OLED_ShowString(0, 16, "ECU1-BodyControl", OLED_8X16);
+    OLED_ShowString(0, 42, "Initializing...", OLED_8X16);
+    OLED_Update();
+	
     Delay_ms(2000);
     
     system_state = SYSTEM_READY;
@@ -91,22 +92,25 @@ void Show_MainMenu(void)
 {
     OLED_Clear();
 	OLED2_Clear();
-    OLED2_ShowString(1, 1, "====Main Menu===");
+    OLED2_ShowString(0, 0, "====Main Menu===", OLED_8X16);
     
     for(uint8_t i = 0; i < MENU_COUNT - 1; i++)
 	{
         if(i == selected_menu)
 		{
-			OLED_ShowString(1 + i, 1, ">");
+			OLED_ShowString(0, 16*i, ">" ,OLED_8X16);
         }
-        OLED_ShowString(1 + i , 2, (char*)menu_items[i]);
+        OLED_ShowString(8, 16*i, (char*)menu_items[i] ,OLED_8X16);
     }
 	//由于屏幕空间不够，第五项放到第二个oled上显示
 	if(selected_menu == MENU_COUNT - 1)
 	{
-		OLED2_ShowString(2, 1, ">");
+		OLED2_ShowString(0, 16, ">", OLED_8X16);
 	}
-	OLED2_ShowString(2 , 2, (char*)menu_items[MENU_COUNT - 1]);
+	OLED2_ShowString(8 , 16, (char*)menu_items[MENU_COUNT - 1], OLED_8X16);
+	
+	OLED_Update();
+	OLED2_Update();
 }
 
 /** 函  数：按键处理
@@ -230,26 +234,29 @@ void Remote_Control_Mode(void)
         // 显示控制界面
         OLED_Clear();
 		OLED2_Clear();
-        OLED2_ShowString(1, 1, "RemoteControlMod");
-        OLED_ShowString(1, 1, "Speed:");
-        OLED_ShowNum(1, 7, speed, 3);
-        OLED_ShowString(1, 10, "%");
+        OLED2_ShowString(0, 0, "RemoteControlMod", OLED_8X16);
+        OLED_ShowString(0, 0, "Speed:", OLED_8X16);
+        OLED_ShowNum(48, 0, speed, 3 ,OLED_8X16);
+        OLED_ShowString(72, 0, "%", OLED_8X16);
         
-        OLED_ShowString(2, 1, "Dir:");
+        OLED_ShowString(0, 16, "Dir:", OLED_8X16);
         if(direction == 1)
 		{
-            OLED_ShowString(2, 5, "Forward");
+            OLED_ShowString(32, 16, "Forward", OLED_8X16);
         }
 		else
 		{
-            OLED_ShowString(2, 5, "Reverse");
+            OLED_ShowString(32, 16, "Reverse", OLED_8X16);
         }
         
-        OLED2_ShowString(2, 1, "Key1:V+");
-        OLED2_ShowString(2, 9, "Key2:V-");
-        OLED2_ShowString(3, 1, "Key3:Change Dir");
-        OLED2_ShowString(4, 1, "Key4:Back");
+        OLED2_ShowString(0, 16, "Key1:V+", OLED_8X16);
+        OLED2_ShowString(64, 16, "Key2:V-", OLED_8X16);
+        OLED2_ShowString(0, 32, "Key3:Change Dir", OLED_8X16);
+        OLED2_ShowString(0, 48, "Key4:Back", OLED_8X16);
         
+		OLED_Update();
+		OLED2_Update();
+		
         Delay_ms(50);
     }
 }
@@ -274,30 +281,33 @@ void Sensor_Display_Mode(void)
         // 显示传感器数据
         OLED_Clear();
 		OLED2_Clear();
-        OLED2_ShowString(1, 1, "Sensor Data");
+        OLED2_ShowString(0, 0, "Sensor Data", OLED_8X16);
         
-        OLED_ShowString(1, 1, "Distance:");
-        OLED_ShowNum(1, 10, sensor_data.distance, 4);
-        OLED_ShowString(1, 14, "mm");
+        OLED_ShowString(0, 0, "Distance:", OLED_8X16);
+        OLED_ShowNum(9*8, 0, sensor_data.distance, 4, OLED_8X16);
+        OLED_ShowString(13*8 , 0, "mm", OLED_8X16);
         
-        OLED_ShowString(2, 1, "Pitch:");
-        OLED_ShowSignedNum(2, 7, sensor_data.pitch, 4);
-        OLED_ShowString(2, 11, "deg");
+        OLED_ShowString(0 , 16, "Pitch:", OLED_8X16);
+        OLED_ShowSignedNum(6*8, 16, sensor_data.pitch, 4, OLED_8X16);
+        OLED_ShowString(10*8, 16, "deg", OLED_8X16);
         
-        OLED_ShowString(3, 1, "Roll:");
-        OLED_ShowSignedNum(3, 6, sensor_data.roll, 4);
-        OLED_ShowString(3, 10, "deg");
+        OLED_ShowString(0, 32, "Roll:", OLED_8X16);
+        OLED_ShowSignedNum(5*8, 32, sensor_data.roll, 4, OLED_8X16);
+        OLED_ShowString(9*8, 32, "deg", OLED_8X16);
         
-        OLED_ShowString(4, 1, "Yaw:");
-        OLED_ShowSignedNum(4, 5, sensor_data.yaw, 4);
-        OLED_ShowString(4, 9, "deg");
+        OLED_ShowString(0, 48, "Yaw:", OLED_8X16);
+        OLED_ShowSignedNum(4*8, 48, sensor_data.yaw, 4, OLED_8X16);
+        OLED_ShowString(8*8, 48, "deg", OLED_8X16);
         
-        OLED2_ShowString(2, 1, "Voltage:");
-        OLED2_ShowNum(2, 9, sensor_data.voltage, 4);
-        OLED2_ShowString(2, 13, "mV");
+        OLED2_ShowString(0, 16, "Voltage:", OLED_8X16);
+        OLED2_ShowNum(8*8, 16, sensor_data.voltage, 4, OLED_8X16);
+        OLED2_ShowString(12*8, 16, "mV", OLED_8X16);
         
-        OLED2_ShowString(4, 1, "Key4: Back");
+        OLED2_ShowString(0, 48, "Key4: Back", OLED_8X16);
         
+		OLED_Update();
+		OLED2_Update();
+		
         Delay_ms(100);
     }
 }
@@ -336,34 +346,37 @@ void System_Monitor_Mode(void)
         // 显示系统状态
         OLED_Clear();
 		OLED2_Clear();
-        OLED2_ShowString(1, 1, "System Monitor");
+        OLED2_ShowString(0, 0, "System Monitor", OLED_8X16);
         
-        OLED2_ShowString(2, 1, "ECU1:");
-        OLED2_ShowString(2, 6, heartbeat_status[0] ? "Online" : "Offline");
+        OLED_ShowString(0, 0, "ECU1:", OLED_6X8);
+        OLED_ShowString(5*6, 0, heartbeat_status[0] ? "Online" : "Offline", OLED_6X8);
         
-        OLED2_ShowString(3, 1, "ECU2:");
-        OLED2_ShowString(3, 6, heartbeat_status[1] ? "Online" : "Offline");
+        OLED_ShowString(0, 8, "ECU2:", OLED_6X8);
+        OLED_ShowString(5*6, 8, heartbeat_status[1] ? "Online" : "Offline", OLED_6X8);
         if(heartbeat_status[1])
 		{
-            OLED2_ShowString(4, 3, "Speed:");
-            OLED2_ShowNum(4, 9, motor_status.actual_speed, 4);
+            OLED_ShowString(2*6, 16, "Speed:", OLED_6X8);
+            OLED_ShowNum(8*6, 16, motor_status.actual_speed, 4, OLED_6X8);
         }
         
-        OLED_ShowString(1, 1, "ECU3:");
-        OLED_ShowString(1, 6, heartbeat_status[2] ? "Online" : "Offline");
+        OLED_ShowString(0, 24, "ECU3:", OLED_6X8);
+        OLED_ShowString(5*6, 24, heartbeat_status[2] ? "Online" : "Offline", OLED_6X8);
         
-        OLED_ShowString(2, 3, "MotorTemp:");
-        OLED_ShowNum(2, 13, motor_status.temperature, 3);
-        OLED_ShowString(2, 16, "C");
+        OLED_ShowString(2*6, 32, "MotorTemp:", OLED_6X8);
+        OLED_ShowNum(12*6, 32, motor_status.temperature, 3, OLED_6X8);
+        OLED_ShowString(15*6, 32, "C", OLED_6X8);
         
-        OLED_ShowString(3, 3, "Motor_I:");
-        OLED_ShowNum(3, 11, motor_status.current, 4);
-        OLED_ShowString(3, 15, "mA");
+        OLED_ShowString(2*6, 40, "MotorCurrent:", OLED_6X8);
+        OLED_ShowNum(15*6, 40, motor_status.current, 4, OLED_6X8);
+        OLED_ShowString(19*6, 40, "mA", OLED_6X8);
         
-        OLED_ShowString(4, 3, "MotorStatus:");
-        OLED_ShowHexNum(4, 15, motor_status.status, 2);
+        OLED_ShowString(2*6, 48, "MotorStatus:", OLED_6X8);
+        OLED_ShowHexNum(14*6, 48, motor_status.status, 2, OLED_6X8);
         
-        //OLED2_ShowString(4, 1, "Key4: Back");
+        OLED2_ShowString(0, 48, "Key4: Back", OLED_8X16);
+		
+		OLED_Update();
+		OLED2_Update();
         
         Delay_ms(100);
     }
@@ -407,29 +420,35 @@ void CAN_Test_Mode(void)
         // 显示CAN测试界面
         OLED_Clear();
 		OLED2_Clear();
-        OLED2_ShowString(1, 1, "CAN Test Mode");
-        OLED_ShowString(1, 1, "Test Counter:");
-        OLED_ShowNum(1, 14, test_counter, 3);
+        OLED2_ShowString(0, 0, "CAN Test Mode", OLED_8X16);
+        OLED_ShowString(0, 0, "Test Counter:", OLED_8X16);
+        OLED_ShowNum(13*8, 0, test_counter, 3, OLED_8X16);
         
-        OLED2_ShowString(3, 1, "Key3: Send Test");
-        OLED2_ShowString(4, 1, "Key4: Back");
+        OLED2_ShowString(0, 32, "Key3: Send Test", OLED_8X16);
+        OLED2_ShowString(0, 48, "Key4: Back", OLED_8X16);
         
         // 显示接收到的CAN报文
         uint32_t can_id;
         uint8_t can_data[8];
         uint8_t can_len;
+		
+		OLED_ShowString(0, 16, "RX ID:", OLED_8X16);
+		OLED_ShowString(0, 32, "Data:", OLED_8X16);
         
         if(MyCAN_Receive_Message(&can_id, can_data, &can_len))
 		{
-            OLED_ShowString(2, 1, "RX ID:");
-            OLED_ShowHexNum(2, 7, can_id, 3);
+            //OLED_ShowString(0, 16, "RX ID:", OLED_8X16);
+            OLED_ShowHexNum(6*8, 16, can_id, 3, OLED_8X16);
             
-            OLED_ShowString(3, 1, "Data:");
+            //OLED_ShowString(0, 32, "Data:", OLED_8X16);
             for(uint8_t i = 0; i < can_len && i < 8; i++)
 			{
-                OLED_ShowHexNum( 3, 6 + i, can_data[i], 8);
+                OLED_ShowHexNum( 5*8 + 8*i, 32, can_data[i], 8, OLED_8X16);
             }
         }
+		
+		OLED_Update();
+		OLED2_Update();
         
         Delay_ms(50);
     }
@@ -486,24 +505,29 @@ void Parameter_Setting_Mode(void)
         // 显示参数设置界面
         OLED_Clear();
 		OLED2_Clear();
-        OLED2_ShowString(1, 1, "ParameterSetting");
+        OLED2_ShowString(0, 0, "ParameterSetting", OLED_8X16);
         
         // CAN波特率
-        OLED_ShowString(1, 2, "CANBaudrate:");
-        if(selected_param == 0) OLED_ShowString(1, 1, ">");
+        OLED_ShowString(8, 0, "CANBaudrate:", OLED_8X16);
+        if(selected_param == 0)
+			OLED_ShowString(0, 0, ">", OLED_8X16);
 		
-        OLED_ShowString(1, 13, (char*)baudrate_names[can_baudrate]);
+        OLED_ShowString(2*8, 16, (char*)baudrate_names[can_baudrate], OLED_8X16);
         
         // 心跳周期
-        OLED_ShowString(2, 2, "Heart Period:");
-        if(selected_param == 1) OLED_ShowString(2, 1, ">");
+        OLED_ShowString(8, 32, "Heart Period:", OLED_8X16);
+        if(selected_param == 1)
+			OLED_ShowString(0, 32, ">", OLED_8X16);
 		
-        OLED_ShowNum(3, 4, heartbeat_period, 2);
-        OLED_ShowString(3, 6, "s");
+        OLED_ShowNum(2*8, 48, heartbeat_period, 2, OLED_8X16);
+        OLED_ShowString(4*8, 48, "s", OLED_8X16);
         
-        OLED2_ShowString(2, 1, "Key1/2: Select");
-        OLED2_ShowString(3, 1, "Key3: Change");
-        OLED2_ShowString(4, 1, "Key4: Save&Back");
+        OLED2_ShowString(0, 16, "Key1/2: Select", OLED_8X16);
+        OLED2_ShowString(0, 32, "Key3: Change", OLED_8X16);
+        OLED2_ShowString(0, 48, "Key4: Save&Back", OLED_8X16);
+		
+		OLED_Update();
+		OLED2_Update();
 		
         Delay_ms(50);
     }
