@@ -1,6 +1,7 @@
 #include "stm32f10x.h"                  // Device header
 #include "PWM.h"
 #include "Delay.h"
+#include "Serial.h"
 #include <stdlib.h>
 
 // PWM定时器配置
@@ -85,8 +86,8 @@ void Motor_Init(uint16_t arr, uint16_t psc)
     motor_control.protection.over_voltage = 0;
     motor_control.protection.under_voltage = 0;
     
-    //printf("Motor initialized. PWM Freq: %ld Hz\r\n", 
-    //       SystemCoreClock / ((psc + 1) * (arr + 1)));
+    printf("Motor initialized. PWM Freq: %ld Hz\r\n", 
+           SystemCoreClock / ((psc + 1) * (arr + 1)));
 }
 
 /** 函  数：设置电机速度和方向
@@ -184,5 +185,107 @@ void Motor_SmoothAcceleration(int16_t target_speed, uint8_t direction, uint16_t 
         current_speed += step;
         Motor_SetSpeed(current_speed, direction);
         Delay_ms(delay_time);
+    }
+}
+
+/** 函  数：电机保护检测
+  * 参  数：无
+  * 返回值：error_flags：错误标志位，详见错误代码定义
+  */
+uint8_t Motor_Protection_Check(void)
+{
+    uint8_t error_flags = 0;
+    
+    // 检测过流（这里需要连接电流检测电路）
+    // 通过ADC读取电流值
+    /*uint16_t current = Motor_GetCurrent();  // 需要实现此函数
+    if(current > MOTOR_MAX_CURRENT)
+	{
+        motor_control.protection.over_current = 1;
+        error_flags |= ERROR_OVER_CURRENT;
+    } else {
+        motor_control.protection.over_current = 0;
+    }*/
+    
+    // 检测温度（需要温度传感器）
+    /*uint8_t temperature = Motor_GetTemperature();  // 需要实现此函数
+    if(temperature > MOTOR_MAX_TEMP)
+	{
+        motor_control.protection.over_temp = 1;
+        error_flags |= ERROR_OVER_TEMP;
+    }
+	else
+	{
+        motor_control.protection.over_temp = 0;
+    }*/
+    
+    // 检测堵转
+    static uint32_t last_speed = 0;
+    static uint32_t stall_counter = 0;
+    
+    if(motor_control.target_speed > 100 && motor_control.current_speed < 10)
+	{
+        stall_counter++;
+        if(stall_counter > 50)
+		{  // 连续50次检测到堵转
+            motor_control.protection.stall = 1;
+            error_flags |= ERROR_STALL;
+        }
+    }
+	else
+	{
+        stall_counter = 0;
+        motor_control.protection.stall = 0;
+    }
+    
+    last_speed = motor_control.current_speed;
+    
+    return error_flags;
+}
+
+// 错误处理
+void Motor_Error_Handler(uint8_t error_code)
+{
+    // 立即停止电机
+    Motor_SetSpeed(0, MOTOR_STOP);
+    motor_control.state = MOTOR_STATE_ERROR;
+    
+    // 根据错误代码进行相应处理
+    switch(error_code)
+	{
+        case ERROR_OVER_CURRENT:
+            printf("Motor Error: Over Current!\r\n");
+            break;
+        case ERROR_OVER_TEMP:
+            printf("Motor Error: Over Temperature!\r\n");
+            break;
+        case ERROR_STALL:
+            printf("Motor Error: Stall!\r\n");
+            break;
+        case ERROR_OVER_VOLTAGE:
+            printf("Motor Error: Over Voltage!\r\n");
+            break;
+        case ERROR_UNDER_VOLTAGE:
+            printf("Motor Error: Under Voltage!\r\n");
+            break;
+    }
+    
+    // 记录错误
+    motor_control.error_code = error_code;
+    motor_control.error_count++;
+	
+    // 可以添加错误恢复机制
+    // 例如：延时后尝试重启
+    static uint32_t error_time = 0;
+    if(error_time == 0)
+	{
+        error_time = HAL_GetTick();
+    }
+    
+    if(HAL_GetTick() - error_time > 5000)
+	{  // 5秒后尝试恢复
+        printf("Attempting to recover from error...\r\n");
+        motor_control.state = MOTOR_STATE_IDLE;
+        error_time = 0;
     }
 }
