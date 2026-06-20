@@ -69,5 +69,6 @@ void Motor_SetSpeed(int16_t speed, uint8_t direction);
 void Motor_SmoothAcceleration(int16_t target_speed, uint8_t direction, uint16_t acc_time_ms);
 uint8_t Motor_Protection_Check(void);
 void Motor_Error_Handler(uint8_t error_code);
+Motor_Status Motor_GetStatus(void);
 
 #endif

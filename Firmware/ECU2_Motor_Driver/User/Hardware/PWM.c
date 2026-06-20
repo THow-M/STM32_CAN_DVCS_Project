@@ -243,7 +243,10 @@ uint8_t Motor_Protection_Check(void)
     return error_flags;
 }
 
-// 错误处理
+/** 函  数：错误处理
+  * 参  数：error_code：错误代码，取值详见错误代码定义
+  * 返回值：无
+  */
 void Motor_Error_Handler(uint8_t error_code)
 {
     // 立即停止电机
@@ -288,4 +291,29 @@ void Motor_Error_Handler(uint8_t error_code)
         motor_control.state = MOTOR_STATE_IDLE;
         error_time = 0;
     }
+}
+
+/** 函  数：获取电机状态
+  * 参  数：无
+  * 返回值：status：电机状态结构体
+  */
+Motor_Status Motor_GetStatus(void)
+{
+    Motor_Status status;
+    
+    status.speed = motor_control.current_speed;
+    status.target_speed = motor_control.target_speed;
+    status.direction = motor_control.direction;
+    status.state = motor_control.state;
+    status.error_code = motor_control.error_code;
+    
+    // 组合保护状态
+    status.protection_status = 0;
+    if(motor_control.protection.over_current)  status.protection_status |= ERROR_OVER_CURRENT;
+    if(motor_control.protection.over_temp)     status.protection_status |= ERROR_OVER_TEMP;
+    if(motor_control.protection.stall)         status.protection_status |= ERROR_STALL;
+    if(motor_control.protection.over_voltage)  status.protection_status |= ERROR_OVER_VOLTAGE;
+    if(motor_control.protection.under_voltage) status.protection_status |= ERROR_UNDER_VOLTAGE;
+    
+    return status;
 }
