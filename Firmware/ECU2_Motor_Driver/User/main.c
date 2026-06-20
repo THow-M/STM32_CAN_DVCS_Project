@@ -7,10 +7,17 @@
 
 int main(void) 
 {
-    
+    LED_Init();
 
     while(1) 
 	{
-        
+        LED_ON();
+		Delay_ms(500);
+		LED_OFF();
+		Delay_ms(500);
+		LED_Turn();
+		Delay_ms(500);
+		LED_Turn();
+		Delay_ms(500);
     }
 }
