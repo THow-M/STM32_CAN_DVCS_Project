@@ -4,10 +4,12 @@
 #include "Key.h"
 #include "LED.h"
 #include "Serial.h"
+#include "PWM.h"
 
 int main(void) 
 {
     LED_Init();
+	PWM_Init(999, 71);
 
     while(1) 
 	{
