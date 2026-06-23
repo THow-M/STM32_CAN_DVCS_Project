@@ -23,7 +23,7 @@ void PWM_Init(uint16_t arr, uint16_t psc)
     // 3. 定时器基础配置
     TIM_TimeBaseStructure.TIM_Period = arr;
     TIM_TimeBaseStructure.TIM_Prescaler = psc;
-    TIM_TimeBaseStructure.TIM_ClockDivision = 0;
+    TIM_TimeBaseStructure.TIM_ClockDivision = TIM_CKD_DIV1;
     TIM_TimeBaseStructure.TIM_CounterMode = TIM_CounterMode_Up;
     TIM_TimeBaseStructure.TIM_RepetitionCounter = 0;
     TIM_TimeBaseInit(TIM1, &TIM_TimeBaseStructure);
@@ -52,7 +52,7 @@ void PWM_Init(uint16_t arr, uint16_t psc)
   */
 void PWM_SetCompare1(uint16_t Compare)
 {
-    TIM_SetCompare1(TIM2, Compare);
+    TIM_SetCompare1(TIM1, Compare);
 }
 
 /** 函  数：获取PWM周期
