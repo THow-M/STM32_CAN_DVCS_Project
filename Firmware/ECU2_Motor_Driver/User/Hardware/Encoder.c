@@ -108,3 +108,56 @@ int32_t Encoder_GetTotalPulses(void)
 {
     return encoder_total_pulses;
 }
+
+// 计算速度（RPM）
+float Encoder_CalculateSpeed(uint16_t sample_time_ms)
+{
+    static uint32_t last_calc_time = 0;
+    static int32_t last_total_pulses = 0;
+    
+    uint32_t current_time = HAL_GetTick();
+    uint32_t elapsed_time = current_time - last_calc_time;
+    
+    if(elapsed_time < sample_time_ms)
+	{
+        return encoder_data.speed_rpm;  // 返回上次计算的速度
+    }
+    
+    int32_t current_pulses = Encoder_GetTotalPulses();
+    int32_t pulse_diff = current_pulses - last_total_pulses;
+    
+    // 计算速度
+    // 公式：转速(RPM) = (脉冲数 / (编码器线数 * 4)) * (60000 / 采样时间) / 减速比
+    // 假设：编码器13线，减速比30:1
+    float speed_rpm = (pulse_diff / (13.0f * 4.0f)) * (60000.0f / elapsed_time) / 30.0f;
+    
+    // 更新数据
+    encoder_data.speed_rpm = speed_rpm;
+    encoder_data.pulse_count = current_pulses;
+    
+    // 判断方向
+    if(pulse_diff > 0)
+	{
+        encoder_data.direction = 1;  // 正转
+    }
+	else if(pulse_diff < 0)
+	{
+        encoder_data.direction = 2;  // 反转
+    }
+	else
+	{
+        encoder_data.direction = 0;  // 停止
+    }
+    
+    // 更新位置（假设每个脉冲对应一定的位移）
+    // 需要根据实际机械结构计算
+    // 假设：轮子周长 = 2 * π * 半径，编码器每转脉冲数 = 线数 * 4 * 减速比
+    // 这里简化处理
+    encoder_data.position += pulse_diff;
+    
+    // 保存本次数据
+    last_total_pulses = current_pulses;
+    last_calc_time = current_time;
+    
+    return speed_rpm;
+}

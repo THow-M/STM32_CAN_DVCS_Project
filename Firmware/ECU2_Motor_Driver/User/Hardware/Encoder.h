@@ -20,7 +20,8 @@ typedef struct
 // 函数声明
 void Encoder_Init(void);
 int32_t Encoder_GetCount(void);
-
+int32_t Encoder_GetTotalPulses(void);
+float Encoder_CalculateSpeed(uint16_t sample_time_ms);
 
 // 外部变量声明
 extern Encoder_Data encoder_data;
