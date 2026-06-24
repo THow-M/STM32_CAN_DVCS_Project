@@ -3,23 +3,40 @@
 #include "Delay.h"
 #include "Key.h"
 #include "LED.h"
+#include "Timer.h"
 #include "Serial.h"
-#include "Motor.h"
 #include "PWM.h"
+#include "Encoder.h"
+#include "Motor.h"
 
 int16_t PWM = 0;
+float Speed;
 
 int main(void) 
 {
+	Timer_Init();
+	OLED_Init();
 	LED_Init();
+	Encoder_Init();
     Motor_Init(999,71);		//电机初始化
-	//GPIO_SetBits(GPIOB, GPIO_Pin_0);
-    //GPIO_ResetBits(GPIOB, GPIO_Pin_1);
-	//Motor_SetSpeed(300,1);
+	
 	LED_ON();
 	while (1)
 	{
 		
 
+	}
+}
+
+void TIM2_IRQHandler(void)
+{
+	if (TIM_GetITStatus(TIM2, TIM_IT_Update) == SET)
+	{
+		Tick_ms++;
+		
+		
+		
+		Speed = Encoder_CalculateSpeed(40);
+		TIM_ClearITPendingBit(TIM2, TIM_IT_Update);
 	}
 }

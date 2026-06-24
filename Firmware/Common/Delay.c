@@ -40,6 +40,8 @@ void Delay_s(uint32_t xs)
 	}
 }
 
+volatile uint32_t Tick_ms = 0;
+
 /**
   * @brief  获取系统运行时间
   * @param  无
@@ -47,16 +49,5 @@ void Delay_s(uint32_t xs)
   */
 uint32_t HAL_GetTick(void)
 {
-    static uint32_t ticks = 0;
-    static uint32_t last_systick = 0;
-    
-    uint32_t current_systick = SysTick->VAL;
-    
-    if(current_systick < last_systick) {
-        // SysTick递减到0，重新加载，说明过了1ms
-        ticks++;
-    }
-    
-    last_systick = current_systick;
-    return ticks;
+    return Tick_ms;
 }
