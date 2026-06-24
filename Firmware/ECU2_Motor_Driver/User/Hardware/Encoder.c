@@ -174,7 +174,6 @@ float Encoder_CalculateSpeed(uint16_t sample_time_ms)
     return speed_rpm;
 }
 
-// 获取编码器数据
 /** 函  数：获取编码器数据
   * 参  数：无
   * 返回值：encoder_data 编码器数据
@@ -185,4 +184,64 @@ Encoder_Data Encoder_GetData(void)
     encoder_data.speed_rpm = Encoder_CalculateSpeed(100);  // 100ms采样周期
     
     return encoder_data;
+}
+
+/** 函  数：编码器校准
+  * 参  数：无
+  * 返回值：无
+  */
+/*void Encoder_Calibrate(void)
+{
+    printf("Starting encoder calibration...\r\n");
+    
+    // 重置计数器
+    TIM_SetCounter(ENCODER_TIM, 32768);
+    encoder_total_pulses = 0;
+    encoder_last_count = 32768;
+    
+    // 清空数据
+    encoder_data.speed_rpm = 0;
+    encoder_data.position = 0;
+    encoder_data.direction = 0;
+    encoder_data.pulse_count = 0;
+    
+    // 进行简单的校准测试
+    // 这里可以自行添加自动校准逻辑
+    
+    printf("Encoder calibration completed.\r\n");
+}*/
+
+/** 函  数：编码器故障检测
+  * 参  数：无
+  * 返回值：编码器故障代码
+  */
+uint8_t Encoder_Fault_Check(void)
+{
+    static uint32_t last_pulse_time = 0;
+    uint32_t current_time = HAL_GetTick();
+    
+    // 检查编码器是否长时间无脉冲
+    if(encoder_data.speed_rpm > 10)
+	{  // 电机在运行
+        int32_t current_pulses = Encoder_GetTotalPulses();
+        static int32_t last_check_pulses = 0;
+        
+        if(current_pulses == last_check_pulses)
+		{
+            // 脉冲数没有变化
+            if(current_time - last_pulse_time > 1000)
+			{  // 1秒无脉冲
+                encoder_data.valid = 0;
+                return ENCODER_FAULT_NO_PULSE;
+            }
+        }
+		else
+		{
+            last_pulse_time = current_time;
+            last_check_pulses = current_pulses;
+            encoder_data.valid = 1;
+        }
+    }
+    
+    return ENCODER_FAULT_NONE;
 }
