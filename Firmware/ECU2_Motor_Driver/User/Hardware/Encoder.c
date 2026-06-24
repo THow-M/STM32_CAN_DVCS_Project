@@ -50,7 +50,7 @@ void Encoder_Init(void)
     
     // 5. 输入捕获配置
     TIM_ICStructInit(&TIM_ICInitStructure);
-    TIM_ICInitStructure.TIM_ICFilter = 0x0F;  // 滤波，抗干扰
+    TIM_ICInitStructure.TIM_ICFilter = 0xF;  // 滤波，抗干扰
     
     TIM_ICInitStructure.TIM_Channel = TIM_Channel_1;
     TIM_ICInit(ENCODER_TIM, &TIM_ICInitStructure);
