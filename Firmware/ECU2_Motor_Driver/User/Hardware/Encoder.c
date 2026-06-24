@@ -7,14 +7,14 @@
 #define ENCODER_TIM              TIM3
 #define ENCODER_TIM_CLK          RCC_APB1Periph_TIM3
 #define ENCODER_GPIO_CLK         RCC_APB2Periph_GPIOA
-#define ENCODER_GPIO             GPIOB
+#define ENCODER_GPIO             GPIOA
 #define ENCODER_PIN_A            GPIO_Pin_6  // PB4 - TIM3_CH1
 #define ENCODER_PIN_B            GPIO_Pin_7  // PB5 - TIM3_CH2
 
 // 编码器全局变量
 Encoder_Data encoder_data = {0};
-int32_t encoder_total_pulses = 0;    // 总脉冲数
-int32_t encoder_last_count = 0;      // 上次计数值
+static int32_t encoder_total_pulses = 0;    // 总脉冲数
+static int32_t encoder_last_count = 0;      // 上次计数值
 uint32_t last_speed_time = 0;        // 上次测速时间
 
 /** 函  数：编码器初始化
@@ -140,8 +140,8 @@ float Encoder_CalculateSpeed(uint16_t sample_time_ms)
     
     // 计算速度
     // 公式：转速(RPM) = (脉冲数 / (编码器线数 * 4)) * (60000 / 采样时间) / 减速比
-    // 假设：编码器13线，减速比30:1
-    float speed_rpm = (pulse_diff / (13.0f * 4.0f)) * (60000.0f / elapsed_time) / 30.0f;
+    // 编码器11线，减速比10:1
+    float speed_rpm = (pulse_diff / (11.0f * 4.0f)) * (60000.0f / elapsed_time) / 10.0f;
     
     // 更新数据
     encoder_data.speed_rpm = speed_rpm;
