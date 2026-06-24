@@ -245,3 +245,20 @@ uint8_t Encoder_Fault_Check(void)
     
     return ENCODER_FAULT_NONE;
 }
+
+/** 函  数：编码器诊断
+  * 参  数：无
+  * 返回值：编码器故障代码
+  */
+void Encoder_Diagnostic(void)
+{
+    printf("=== Encoder Diagnostic ===\r\n");
+    printf("Speed: %.2f RPM\r\n", encoder_data.speed_rpm);
+    printf("Direction: %s\r\n", 
+           encoder_data.direction == 1 ? "Forward" : 
+           encoder_data.direction == 2 ? "Reverse" : "Stop");
+    printf("Position: %ld pulses\r\n", encoder_data.position);
+    printf("Total Pulses: %ld\r\n", encoder_data.pulse_count);
+    printf("Valid: %s\r\n", encoder_data.valid ? "Yes" : "No");
+    printf("==========================\r\n");
+}

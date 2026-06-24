@@ -3,7 +3,7 @@
 #include "MyCAN.h"
 #include "Motor.h"
 #include "PWM.h"
-//#include "Encoder.h"
+#include "Encoder.h"
 //#include "PID_Control.h"
 #include "Delay.h"
 #include "Serial.h"
@@ -204,8 +204,8 @@ void Motor_RunPIDControl(void)
     if (now - last_time < 10) return;
     last_time = now;
 
-    //Encoder_Data enc = Encoder_GetData();
-    //motor_control.current_speed = (int16_t)enc.speed_rpm;
+    Encoder_Data enc = Encoder_GetData();
+    motor_control.current_speed = (int16_t)enc.speed_rpm;
 
     float corrected_target = motor_control.target_speed;
     if (motor_control.direction == MOTOR_REVERSE)
@@ -338,11 +338,11 @@ Motor_Status Motor_GetStatus(void)
   * 参  数：无
   * 返回值：电机速度
   */
-/*float Motor_GetSpeed(void)
+float Motor_GetSpeed(void)
 {
     Encoder_Data enc = Encoder_GetData();
     return enc.speed_rpm;
-}*/
+}
 
 /** 函  数：自动调参
   * 参  数：无
@@ -356,18 +356,18 @@ void Motor_AutoTune(void)
     // Step 1: 测试最大正向速度
     Motor_SetSpeed(1000, MOTOR_FORWARD);
     Delay_ms(2000);
-    //Encoder_Data enc = Encoder_GetData();
-    //float max_fwd = enc.speed_rpm;
-    //printf("Max forward speed: %.1f RPM\n", max_fwd);
+    Encoder_Data enc = Encoder_GetData();
+    float max_fwd = enc.speed_rpm;
+    printf("Max forward speed: %.1f RPM\n", max_fwd);
     Motor_SetSpeed(0, MOTOR_STOP);
     Delay_ms(1000);
 
     // Step 2: 测试最大反向速度
     Motor_SetSpeed(1000, MOTOR_REVERSE);
     Delay_ms(2000);
-    //enc = Encoder_GetData();
-    //float max_rev = -enc.speed_rpm;
-    //printf("Max reverse speed: %.1f RPM\n", max_rev);
+    enc = Encoder_GetData();
+    float max_rev = -enc.speed_rpm;
+    printf("Max reverse speed: %.1f RPM\n", max_rev);
     Motor_SetSpeed(0, MOTOR_STOP);
     Delay_ms(1000);
 
