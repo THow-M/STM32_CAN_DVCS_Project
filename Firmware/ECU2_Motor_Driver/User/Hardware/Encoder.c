@@ -17,7 +17,10 @@ int32_t encoder_total_pulses = 0;    // 总脉冲数
 int32_t encoder_last_count = 0;      // 上次计数值
 uint32_t last_speed_time = 0;               // 上次测速时间
 
-// 编码器初始化
+/** 函  数：编码器初始化
+  * 参  数：无
+  * 返回值：无
+  */
 void Encoder_Init(void)
 {
     GPIO_InitTypeDef GPIO_InitStructure;
@@ -74,7 +77,10 @@ void Encoder_Init(void)
     printf("Encoder initialized successfully.\r\n");
 }
 
-// 获取编码器计数值
+/** 函  数：获取编码器计数值
+  * 参  数：无
+  * 返回值：diff 计数值的相对变化量
+  */
 int32_t Encoder_GetCount(void)
 {
     int32_t count = TIM_GetCounter(ENCODER_TIM);
@@ -103,13 +109,19 @@ int32_t Encoder_GetCount(void)
     return diff;  // 返回相对变化量
 }
 
-// 获取总脉冲数
+/** 函  数：获取总脉冲数
+  * 参  数：无
+  * 返回值：encoder_total_pulses 总脉冲数
+  */
 int32_t Encoder_GetTotalPulses(void)
 {
     return encoder_total_pulses;
 }
 
-// 计算速度（RPM）
+/** 函  数：计算速度（RPM）
+  * 参  数：sample_time_ms 取样时间
+  * 返回值：speed_rpm 电机转速
+  */
 float Encoder_CalculateSpeed(uint16_t sample_time_ms)
 {
     static uint32_t last_calc_time = 0;
@@ -160,4 +172,17 @@ float Encoder_CalculateSpeed(uint16_t sample_time_ms)
     last_calc_time = current_time;
     
     return speed_rpm;
+}
+
+// 获取编码器数据
+/** 函  数：获取编码器数据
+  * 参  数：无
+  * 返回值：encoder_data 编码器数据
+  */
+Encoder_Data Encoder_GetData(void)
+{
+    // 更新速度
+    encoder_data.speed_rpm = Encoder_CalculateSpeed(100);  // 100ms采样周期
+    
+    return encoder_data;
 }
