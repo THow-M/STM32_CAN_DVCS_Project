@@ -8,7 +8,7 @@
   *	参  数：kp 比例项常数，ki 积分项常数，kd 微分项常数
   *	参  数：out_max 输出上限，out_min 输出下限
   *	参  数：intergal_max 积分限幅
-  * 返回值：无
+  * 返回值：pid->output 输出值
   */
 void PID_Init(PID_Controller* pid, float kp, float ki, float kd, 
               float out_max, float out_min, float integral_max)
@@ -31,13 +31,12 @@ void PID_Init(PID_Controller* pid, float kp, float ki, float kd,
     printf("PID initialized: Kp=%.2f, Ki=%.2f, Kd=%.2f\r\n", kp, ki, kd);
 }
 
-// 位置式PID计算
 /** 函  数：位置式PID计算
   * 参  数：pid PID控制器结构体
-  *	参  数：setpoint 
-  *	参  数：measurement 
+  *	参  数：setpoint 目标值
+  *	参  数：measurement 测量值
   *	参  数：dt 
-  * 返回值：无
+  * 返回值：pid->output 
   */
 float PID_Calculate(PID_Controller* pid, float setpoint, float measurement, float dt)
 {
@@ -102,3 +101,62 @@ float PID_Calculate(PID_Controller* pid, float setpoint, float measurement, floa
     
     return pid->output;
 }
+
+/** 函  数：增量式PID计算
+  * 参  数：pid PID控制器结构体
+  *	参  数：setpoint 目标值
+  *	参  数：measurement 测量值
+  *	参  数：dt
+  * 返回值：pid->output 输出值
+  */
+float PID_Calculate_Incremental(PID_Controller* pid, float setpoint, float measurement, float dt)
+{
+    if(!pid->enabled)
+	{
+        return 0.0f;
+    }
+    
+    float error = setpoint - measurement;
+    float delta_output;
+    
+    // 死区处理
+    if(fabs(error) < pid->dead_zone)
+	{
+        error = 0.0f;
+    }
+    
+    // 低通滤波
+    pid->filtered_error = pid->filter_coeff * pid->filtered_error + (1.0f - pid->filter_coeff) * error;
+    
+    // 计算增量
+    delta_output = pid->kp * (pid->filtered_error - pid->prev_error) +
+                  pid->ki * pid->filtered_error * dt +
+                  pid->kd * (pid->filtered_error - 2 * pid->prev_error + pid->prev_error2) / dt;
+    
+    // 更新历史误差
+    pid->prev_error2 = pid->prev_error;
+    pid->prev_error = pid->filtered_error;
+    
+    // 累加输出
+    pid->output += delta_output;
+    
+    // 输出限幅
+    if(pid->output > pid->out_max)
+	{
+        pid->output = pid->out_max;
+    }
+	else if(pid->output < pid->out_min)
+	{
+        pid->output = pid->out_min;
+    }
+    
+    return pid->output;
+}
+
+/** 函  数：增量式PID计算
+  * 参  数：pid PID控制器结构体
+  *	参  数：setpoint 目标值
+  *	参  数：measurement 测量值
+  *	参  数：dt
+  * 返回值：pid->output 输出值
+  */
