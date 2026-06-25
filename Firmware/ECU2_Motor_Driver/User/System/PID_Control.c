@@ -153,10 +153,15 @@ float PID_Calculate_Incremental(PID_Controller* pid, float setpoint, float measu
     return pid->output;
 }
 
-/** 函  数：增量式PID计算
+/** 函  数：重置PID控制器
   * 参  数：pid PID控制器结构体
-  *	参  数：setpoint 目标值
-  *	参  数：measurement 测量值
-  *	参  数：dt
-  * 返回值：pid->output 输出值
+  * 返回值：无
   */
+void PID_Reset(PID_Controller* pid)
+{
+    pid->integral = 0.0f;
+    pid->prev_error = 0.0f;
+    pid->prev_error2 = 0.0f;
+    pid->output = 0.0f;
+    pid->filtered_error = 0.0f;
+}

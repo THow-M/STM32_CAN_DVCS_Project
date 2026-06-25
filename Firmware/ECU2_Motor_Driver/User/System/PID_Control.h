@@ -29,5 +29,6 @@ void PID_Init(PID_Controller* pid, float kp, float ki, float kd,
               float out_max, float out_min, float integral_max);
 float PID_Calculate(PID_Controller* pid, float setpoint, float measurement, float dt);
 float PID_Calculate_Incremental(PID_Controller* pid, float setpoint, float measurement, float dt);
+void PID_Reset(PID_Controller* pid);
 
 #endif
