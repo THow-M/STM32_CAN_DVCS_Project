@@ -165,3 +165,15 @@ void PID_Reset(PID_Controller* pid)
     pid->output = 0.0f;
     pid->filtered_error = 0.0f;
 }
+
+/** 函  数：设置PID参数
+  * 参  数：pid PID控制器结构体
+  * 参  数：kp 比例项常数，ki 积分项常数，kd 微分项常数
+  * 返回值：无
+  */
+void PID_SetParameters(PID_Controller* pid, float kp, float ki, float kd)
+{
+    pid->kp = kp;
+    pid->ki = ki;
+    pid->kd = kd;
+}
