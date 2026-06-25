@@ -27,6 +27,6 @@ typedef struct
 // 函数声明
 void PID_Init(PID_Controller* pid, float kp, float ki, float kd, 
               float out_max, float out_min, float integral_max);
-
+float PID_Calculate(PID_Controller* pid, float setpoint, float measurement, float dt);
 
 #endif
