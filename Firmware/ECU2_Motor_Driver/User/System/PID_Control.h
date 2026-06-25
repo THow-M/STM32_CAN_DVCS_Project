@@ -31,5 +31,6 @@ float PID_Calculate(PID_Controller* pid, float setpoint, float measurement, floa
 float PID_Calculate_Incremental(PID_Controller* pid, float setpoint, float measurement, float dt);
 void PID_Reset(PID_Controller* pid);
 void PID_SetParameters(PID_Controller* pid, float kp, float ki, float kd);
+void PID_GetParameters(PID_Controller* pid, float* kp, float* ki, float* kd);
 
 #endif

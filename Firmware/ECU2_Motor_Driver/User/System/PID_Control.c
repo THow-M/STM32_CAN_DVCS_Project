@@ -177,3 +177,15 @@ void PID_SetParameters(PID_Controller* pid, float kp, float ki, float kd)
     pid->ki = ki;
     pid->kd = kd;
 }
+
+/** 函  数：获取PID参数
+  * 参  数：pid PID控制器结构体
+  * 参  数：*kp 获取比例项常数的指针，*ki 获取积分项常数的指针，*kd 获取微分项常数的指针
+  * 返回值：无
+  */
+void PID_GetParameters(PID_Controller* pid, float* kp, float* ki, float* kd)
+{
+    *kp = pid->kp;
+    *ki = pid->ki;
+    *kd = pid->kd;
+}
