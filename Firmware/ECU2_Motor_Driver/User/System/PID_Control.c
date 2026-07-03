@@ -15,6 +15,11 @@
 void PID_Init(PID_Controller* pid, float kp, float ki, float kd, 
               float out_max, float out_min, float integral_max)
 {
+	if (pid == NULL)
+    {
+        return;
+    }
+	
     pid->kp = kp;
     pid->ki = ki;
     pid->kd = kd;
@@ -42,6 +47,11 @@ void PID_Init(PID_Controller* pid, float kp, float ki, float kd,
   */
 float PID_Calculate(PID_Controller* pid, float setpoint, float measurement, float dt)
 {
+	if (pid == NULL)
+    {
+        return 0.0f;
+    }
+	
     if(!pid->enabled)
 	{
         return 0.0f;
@@ -113,6 +123,11 @@ float PID_Calculate(PID_Controller* pid, float setpoint, float measurement, floa
   */
 float PID_Calculate_Incremental(PID_Controller* pid, float setpoint, float measurement, float dt)
 {
+	if (pid == NULL)
+    {
+        return 0.0f;
+    }
+	
     if(!pid->enabled)
 	{
         return 0.0f;
@@ -161,6 +176,11 @@ float PID_Calculate_Incremental(PID_Controller* pid, float setpoint, float measu
   */
 void PID_Reset(PID_Controller* pid)
 {
+	if (pid == NULL)
+    {
+        return;
+    }
+	
     pid->integral = 0.0f;
     pid->prev_error = 0.0f;
     pid->prev_error2 = 0.0f;
@@ -175,6 +195,11 @@ void PID_Reset(PID_Controller* pid)
   */
 void PID_SetParameters(PID_Controller* pid, float kp, float ki, float kd)
 {
+	if (pid == NULL)
+    {
+        return;
+    }
+	
     pid->kp = kp;
     pid->ki = ki;
     pid->kd = kd;
@@ -187,19 +212,35 @@ void PID_SetParameters(PID_Controller* pid, float kp, float ki, float kd)
   */
 void PID_GetParameters(PID_Controller* pid, float* kp, float* ki, float* kd)
 {
+	if (pid == NULL || kp == NULL || ki == NULL || kd == NULL)
+    {
+        return;
+    }
+	
     *kp = pid->kp;
     *ki = pid->ki;
     *kd = pid->kd;
 }
 
-/** 函  数：PID自整定（简易版）
-  * 参  数：pid PID控制器结构体
-  * 参  数：*kp 获取比例项常数的指针，*ki 获取积分项常数的指针，*kd 获取微分项常数的指针
+/**
+  * 函  数：PID自整定（简易版 - 齐格勒-尼科尔斯方法）
+  * 参  数：pid               PID控制器结构体指针
+  * 参  数：setpoint          目标设定值
+  * 参  数：measurement_func  测量值回调函数指针
+  * 参  数：dt                采样周期(秒)
+  * 参  数：cycles            自整定最大循环次数
   * 返回值：无
+  * 注  释：使用继电器反馈法（类似Z-N法）寻找临界增益和振荡周期
+  *         注意：此函数会阻塞CPU执行，建议仅在调试阶段使用
   */
 void PID_AutoTune(PID_Controller* pid, float setpoint, float (*measurement_func)(void), 
                   float dt, uint16_t cycles)
 {
+	if (pid == NULL || measurement_func == NULL)
+    {
+        return;
+    }
+	
     printf("Starting PID auto-tuning...\r\n");
     
     float ku, tu;  // 临界增益和周期
