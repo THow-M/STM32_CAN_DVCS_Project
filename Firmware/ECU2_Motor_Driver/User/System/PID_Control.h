@@ -34,5 +34,6 @@ void PID_SetParameters(PID_Controller* pid, float kp, float ki, float kd);
 void PID_GetParameters(PID_Controller* pid, float* kp, float* ki, float* kd);
 void PID_AutoTune(PID_Controller* pid, float setpoint, float (*measurement_func)(void), 
                   float dt, uint16_t cycles);
+void PID_Diagnostic(PID_Controller* pid);
 
 #endif

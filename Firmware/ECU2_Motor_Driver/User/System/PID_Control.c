@@ -281,3 +281,18 @@ void PID_AutoTune(PID_Controller* pid, float setpoint, float (*measurement_func)
     Motor_SetTargetSpeed(0, MOTOR_STOP);
     printf("Auto-tuning failed. Using default parameters.\r\n");
 }
+
+// PID诊断
+void PID_Diagnostic(PID_Controller* pid)
+{
+    printf("=== PID Diagnostic ===\r\n");
+    printf("Parameters: Kp=%.3f, Ki=%.3f, Kd=%.3f\r\n", 
+           pid->kp, pid->ki, pid->kd);
+    printf("Integral: %.3f\r\n", pid->integral);
+    printf("Output: %.3f\r\n", pid->output);
+    printf("Enabled: %s\r\n", pid->enabled ? "Yes" : "No");
+    printf("Dead Zone: %.3f\r\n", pid->dead_zone);
+    printf("Integral Max: %.3f\r\n", pid->integral_max);
+    printf("Output Range: [%.1f, %.1f]\r\n", pid->out_min, pid->out_max);
+    printf("=====================\r\n");
+}
