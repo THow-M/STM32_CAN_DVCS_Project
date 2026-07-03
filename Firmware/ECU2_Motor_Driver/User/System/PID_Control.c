@@ -236,104 +236,91 @@ void PID_GetParameters(PID_Controller* pid, float* kp, float* ki, float* kd)
 void PID_AutoTune(PID_Controller* pid, float setpoint, float (*measurement_func)(void), 
                   float dt, uint16_t cycles)
 {
-	if (pid == NULL || measurement_func == NULL)
+    if (pid == NULL || measurement_func == NULL)
     {
         return;
     }
-	
+    
     printf("Starting PID auto-tuning...\r\n");
     
-    float ku, tu;  // 临界增益和周期
+    float ku = 0.0f;         /* 临界增益 */
+    float tu = 0.0f;         /* 振荡周期(秒) */
     float max_output = pid->out_max;
-    float min_output = pid->out_min;
     float test_output = 0.0f;
     float measurement = 0.0f;
     uint8_t oscillating = 0;
-    float last_measurement = 0.0f;
     uint32_t oscillation_start = 0;
     float max_amplitude = 0.0f;
-    uint32_t half_period_count = 0;
+    uint8_t peak_count = 0;  /* 峰值计数（非static，每次调用重置） */
+    float last_measurement = 0.0f;
+    uint8_t last_sign = 0;   /* 上次测量值方向: 1-上升, 0-下降 */
     
-    // 步骤1：逐渐增加输出直到系统振荡
-    for(uint16_t i = 0; i < cycles; i++)
-	{
-        test_output = (max_output * (i + 1)) / cycles;
+    /* 步骤1：逐渐增加输出，寻找等幅振荡点 */
+    for (uint16_t i = 0; i < cycles; i++)
+    {
+        /* 线性增加测试输出 */
+        test_output = (max_output * (float)(i + 1)) / (float)cycles;
         Motor_SetTargetSpeed((int16_t)test_output, MOTOR_FORWARD);
         
         measurement = measurement_func();
         
-        // 检测振荡
-        if(i > 10)
-		{
+        /* 跳过前几次采样的不稳定阶段 */
+        if (i > 10)
+        {
             float amplitude = fabs(measurement - last_measurement);
-            if(amplitude > max_amplitude)
-			{
+            
+            if (amplitude > max_amplitude)
+            {
                 max_amplitude = amplitude;
             }
             
-            // 检测到明显的振荡
-            if(amplitude > setpoint * 0.1f && !oscillating)
-			{
+            /* 检测过零点（符号变化）来识别振荡周期 */
+            uint8_t current_sign = (measurement >= setpoint) ? 1 : 0;
+            
+            if (current_sign != last_sign && last_sign != 0)
+            {
+                peak_count++;
+            }
+            last_sign = current_sign;
+            
+            /* 检测到明显的振荡（振幅超过设定值的10%） */
+            if ((amplitude > setpoint * 0.1f) && (!oscillating))
+            {
                 oscillating = 1;
-                oscillation_start = HAL_GetTick();
-                ku = test_output / amplitude;  // 估算临界增益
-                printf("Oscillation detected at output=%.1f\r\n", test_output);
+                oscillation_start = HAL_GetTick();  /* 记录振荡起始时间(ms) */
+                ku = test_output / max_amplitude;   /* 估算临界增益 */
+                peak_count = 0;
+                printf("Oscillation detected at output=%.1f, Ku=%.3f\r\n", test_output, ku);
             }
             
-            // 测量振荡周期
-            if(oscillating)
-			{
-                float last_peak = 0.0f;
-                static uint8_t peak_count = 0;
+            /* 检测至少2个过零点（1个完整振荡周期） */
+            if (oscillating && (peak_count >= 2))
+            {
+                /* 使用HAL_GetTick计算经过的时间(ms) */
+                uint32_t elapsed_ms = HAL_GetTick() - oscillation_start;
+                tu = (float)elapsed_ms / 1000.0f;  /* 转换为秒 */
+                printf("Oscillation period: %.3f s\r\n", tu);
                 
-                if(measurement > last_measurement && measurement > setpoint)
-				{
-                    if(peak_count == 0)
-					{
-                        last_peak = measurement;
-                        peak_count = 1;
-                    }
-					else
-					{
-                        tu = (HAL_GetTick() - oscillation_start) / 1000.0f;  // 周期(秒)
-                        printf("Oscillation period: %.3f s\r\n", tu);
-                        
-                        // 使用齐格勒-尼科尔斯方法
-                        float kp_new = 0.6f * ku;
-                        float ki_new = 2.0f * kp_new / tu;
-                        float kd_new = kp_new * tu / 8.0f;
-                        
-                        PID_SetParameters(pid, kp_new, ki_new, kd_new);
-                        Motor_SetTargetSpeed(0, MOTOR_STOP);
-                        
-                        printf("Auto-tuning completed.\r\n");
-                        printf("New parameters: Kp=%.3f, Ki=%.3f, Kd=%.3f\r\n", 
-                               kp_new, ki_new, kd_new);
-                        return;
-                    }
-                }
+                /* 使用齐格勒-尼科尔斯方法计算新参数 */
+                float kp_new = 0.6f * ku;
+                float ki_new = 2.0f * kp_new / tu;
+                float kd_new = kp_new * tu / 8.0f;
+                
+                PID_SetParameters(pid, kp_new, ki_new, kd_new);
+                Motor_SetTargetSpeed(0, MOTOR_STOP);
+                
+                printf("Auto-tuning completed.\r\n");
+                printf("New parameters: Kp=%.3f, Ki=%.3f, Kd=%.3f\r\n", 
+                       kp_new, ki_new, kd_new);
+                return;
             }
         }
         
         last_measurement = measurement;
-        Delay_ms((uint32_t)(dt * 1000));
+        Delay_ms((uint32_t)(dt * 1000.0f));
     }
     
+    /* 自整定失败，恢复停止状态 */
     Motor_SetTargetSpeed(0, MOTOR_STOP);
     printf("Auto-tuning failed. Using default parameters.\r\n");
-}
-
-// PID诊断
-void PID_Diagnostic(PID_Controller* pid)
-{
-    printf("=== PID Diagnostic ===\r\n");
-    printf("Parameters: Kp=%.3f, Ki=%.3f, Kd=%.3f\r\n", 
-           pid->kp, pid->ki, pid->kd);
-    printf("Integral: %.3f\r\n", pid->integral);
-    printf("Output: %.3f\r\n", pid->output);
-    printf("Enabled: %s\r\n", pid->enabled ? "Yes" : "No");
-    printf("Dead Zone: %.3f\r\n", pid->dead_zone);
-    printf("Integral Max: %.3f\r\n", pid->integral_max);
-    printf("Output Range: [%.1f, %.1f]\r\n", pid->out_min, pid->out_max);
-    printf("=====================\r\n");
 }
