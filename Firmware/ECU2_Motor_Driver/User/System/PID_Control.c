@@ -1,6 +1,8 @@
 #include "stm32f10x.h"                  // Device header
 #include "PID_Control.h"
 #include "Serial.h"
+#include "Motor.h"
+#include "Delay.h"
 #include <math.h>
 
 /** 函  数：PID控制器初始化
@@ -188,4 +190,94 @@ void PID_GetParameters(PID_Controller* pid, float* kp, float* ki, float* kd)
     *kp = pid->kp;
     *ki = pid->ki;
     *kd = pid->kd;
+}
+
+/** 函  数：PID自整定（简易版）
+  * 参  数：pid PID控制器结构体
+  * 参  数：*kp 获取比例项常数的指针，*ki 获取积分项常数的指针，*kd 获取微分项常数的指针
+  * 返回值：无
+  */
+void PID_AutoTune(PID_Controller* pid, float setpoint, float (*measurement_func)(void), 
+                  float dt, uint16_t cycles)
+{
+    printf("Starting PID auto-tuning...\r\n");
+    
+    float ku, tu;  // 临界增益和周期
+    float max_output = pid->out_max;
+    float min_output = pid->out_min;
+    float test_output = 0.0f;
+    float measurement = 0.0f;
+    uint8_t oscillating = 0;
+    float last_measurement = 0.0f;
+    uint32_t oscillation_start = 0;
+    float max_amplitude = 0.0f;
+    uint32_t half_period_count = 0;
+    
+    // 步骤1：逐渐增加输出直到系统振荡
+    for(uint16_t i = 0; i < cycles; i++)
+	{
+        test_output = (max_output * (i + 1)) / cycles;
+        Motor_SetTargetSpeed((int16_t)test_output, MOTOR_FORWARD);
+        
+        measurement = measurement_func();
+        
+        // 检测振荡
+        if(i > 10)
+		{
+            float amplitude = fabs(measurement - last_measurement);
+            if(amplitude > max_amplitude)
+			{
+                max_amplitude = amplitude;
+            }
+            
+            // 检测到明显的振荡
+            if(amplitude > setpoint * 0.1f && !oscillating)
+			{
+                oscillating = 1;
+                oscillation_start = HAL_GetTick();
+                ku = test_output / amplitude;  // 估算临界增益
+                printf("Oscillation detected at output=%.1f\r\n", test_output);
+            }
+            
+            // 测量振荡周期
+            if(oscillating)
+			{
+                float last_peak = 0.0f;
+                static uint8_t peak_count = 0;
+                
+                if(measurement > last_measurement && measurement > setpoint)
+				{
+                    if(peak_count == 0)
+					{
+                        last_peak = measurement;
+                        peak_count = 1;
+                    }
+					else
+					{
+                        tu = (HAL_GetTick() - oscillation_start) / 1000.0f;  // 周期(秒)
+                        printf("Oscillation period: %.3f s\r\n", tu);
+                        
+                        // 使用齐格勒-尼科尔斯方法
+                        float kp_new = 0.6f * ku;
+                        float ki_new = 2.0f * kp_new / tu;
+                        float kd_new = kp_new * tu / 8.0f;
+                        
+                        PID_SetParameters(pid, kp_new, ki_new, kd_new);
+                        Motor_SetTargetSpeed(0, MOTOR_STOP);
+                        
+                        printf("Auto-tuning completed.\r\n");
+                        printf("New parameters: Kp=%.3f, Ki=%.3f, Kd=%.3f\r\n", 
+                               kp_new, ki_new, kd_new);
+                        return;
+                    }
+                }
+            }
+        }
+        
+        last_measurement = measurement;
+        Delay_ms((uint32_t)(dt * 1000));
+    }
+    
+    Motor_SetTargetSpeed(0, MOTOR_STOP);
+    printf("Auto-tuning failed. Using default parameters.\r\n");
 }

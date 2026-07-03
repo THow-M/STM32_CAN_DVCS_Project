@@ -32,5 +32,7 @@ float PID_Calculate_Incremental(PID_Controller* pid, float setpoint, float measu
 void PID_Reset(PID_Controller* pid);
 void PID_SetParameters(PID_Controller* pid, float kp, float ki, float kd);
 void PID_GetParameters(PID_Controller* pid, float* kp, float* ki, float* kd);
+void PID_AutoTune(PID_Controller* pid, float setpoint, float (*measurement_func)(void), 
+                  float dt, uint16_t cycles);
 
 #endif
