@@ -7,7 +7,8 @@
 #define HEARTBEAT_PERIOD          1000      //心跳发送周期（ms）
 
 // 系统状态定义
-typedef enum {
+typedef enum
+{
     SYS_IDLE = 0,       // 空闲
     SYS_READY,         // 准备就绪
     SYS_RUN,           // 运行
