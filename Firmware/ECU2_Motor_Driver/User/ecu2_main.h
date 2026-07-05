@@ -33,5 +33,8 @@ typedef enum
 #define HEARTBEAT_TIMEOUT    3000  // 3秒
 #define CAN_TIMEOUT          5000  // 5秒
 
+//函数声明
+void System_Init(void);
+
 
 #endif

@@ -101,6 +101,72 @@ void System_Init(void)
     LED_ON();
 }
 
+// 主控制循环
+void Control_Loop(void)
+{
+    uint32_t current_time = HAL_GetTick();
+    
+    // 1. 保护检测
+    if(current_time - last_protection_check > 100)
+	{  // 100ms
+        last_protection_check = current_time;
+        
+        uint8_t protection_error = Motor_ProtectionCheck();
+        if(protection_error)
+		{
+            Motor_ErrorHandler(protection_error);
+            error_code = protection_error;
+            system_state = SYS_ERROR;
+        }
+    }
+    
+    // 2. 编码器故障检测
+    uint8_t encoder_fault = Encoder_Fault_Check();
+    if(encoder_fault)
+	{
+        printf("Encoder fault: 0x%02X\r\n", encoder_fault);
+        // 可以切换到开环控制
+    }
+    
+    // 3. PID控制
+    if(control_mode == CONTROL_MODE_AUTO && system_state == SYS_RUN)
+	{
+        if(current_time - last_pid_time >= 10)
+		{  // 10ms控制周期
+            last_pid_time = current_time;
+            
+            // 获取实际速度
+            Encoder_Data encoder = Encoder_GetData();
+            actual_speed_rpm = encoder.speed_rpm;
+            
+            // PID计算
+            pid_output = PID_Calculate(&speed_pid, target_speed_rpm, actual_speed_rpm, 0.01f);
+            
+            // 设置电机速度
+            int16_t speed = (int16_t)pid_output;
+            if(speed >= 0)
+			{
+                motor_direction = MOTOR_FORWARD;
+            }
+			else
+			{
+                speed = -speed;
+                motor_direction = MOTOR_REVERSE;
+            }
+            
+            Motor_SetTargetSpeed(speed, motor_direction);
+            
+            // 调试输出
+            if(current_time - last_debug_time > 500)
+			{  // 500ms
+                last_debug_time = current_time;
+                printf("PID: Target=%.1f, Actual=%.1f, Output=%d, Dir=%d\r\n",
+                       target_speed_rpm, actual_speed_rpm, speed, motor_direction);
+            }
+        }
+    }
+}
+
 int main(void) 
 {
 	LED_ON();

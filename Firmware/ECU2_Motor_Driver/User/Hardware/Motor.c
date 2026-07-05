@@ -4,7 +4,7 @@
 #include "Motor.h"
 #include "PWM.h"
 #include "Encoder.h"
-//#include "PID_Control.h"
+#include "PID_Control.h"
 #include "Delay.h"
 #include "Serial.h"
 #include <stdio.h>
@@ -30,7 +30,7 @@
 #define DIR_GPIO_CLK    RCC_APB2Periph_GPIOB
 
 Motor_Control motor_control = {0};
-//static PID_Controller speed_pid;
+static PID_Controller speed_pid;
 static uint8_t control_mode = CONTROL_MODE_MANUAL;
 
 
@@ -54,9 +54,9 @@ void Motor_Init(uint16_t arr, uint16_t psc)
     GPIO_ResetBits(DIR_PORT, DIR_PIN_IN1 | DIR_PIN_IN2);
 
     // 初始化PID
-    //PID_Init(&speed_pid, 0.8f, 0.05f, 0.01f, 1000.0f, -1000.0f, 1000.0f);
-    //speed_pid.dead_zone = 5.0f;
-    //speed_pid.filter_coeff = 0.7f;
+    PID_Init(&speed_pid, 0.8f, 0.05f, 0.01f, 1000.0f, -1000.0f, 1000.0f);
+    speed_pid.dead_zone = 5.0f;
+    speed_pid.filter_coeff = 0.7f;
 
     // 初始化控制结构
     motor_control.current_speed = 0;
@@ -122,8 +122,8 @@ void Motor_SetControlMode(uint8_t mode)
     control_mode = mode;
     if (mode == CONTROL_MODE_MANUAL)
 	{
-        //speed_pid.enabled = 0;
-        //PID_Reset(&speed_pid);
+        speed_pid.enabled = 0;
+        PID_Reset(&speed_pid);
     }
 	else
 	{
@@ -182,7 +182,7 @@ void Motor_EmergencyStop(void)
     PWM_SetCompare1(0);
     Delay_ms(100);
     GPIO_ResetBits(DIR_PORT, DIR_PIN_IN1 | DIR_PIN_IN2);
-    //PID_Reset(&speed_pid);
+    PID_Reset(&speed_pid);
     motor_control.target_speed = 0;
     motor_control.current_speed = 0;
     motor_control.state = MOTOR_STATE_STOP;
@@ -197,7 +197,7 @@ void Motor_RunPIDControl(void)
 {
     if (control_mode != CONTROL_MODE_AUTO) return;
     if (motor_control.state != MOTOR_STATE_RUN) return;
-    //if (!speed_pid.enabled) return;
+    if (!speed_pid.enabled) return;
 
     static uint32_t last_time = 0;
     uint32_t now = HAL_GetTick();
@@ -211,19 +211,19 @@ void Motor_RunPIDControl(void)
     if (motor_control.direction == MOTOR_REVERSE)
 		corrected_target = -corrected_target;
 
-    //float output = PID_Calculate(&speed_pid, corrected_target, enc.speed_rpm, 0.01f);
-    //int16_t pwm = (int16_t)fabs(output);
-    //if (pwm > 1000) pwm = 1000;
+    float output = PID_Calculate(&speed_pid, corrected_target, enc.speed_rpm, 0.01f);
+    int16_t pwm = (int16_t)fabs(output);
+    if (pwm > 1000) pwm = 1000;
 
-    //uint8_t dir = (output >= 0) ? MOTOR_FORWARD : MOTOR_REVERSE;
-    //Motor_SetSpeed(pwm, dir);
+    uint8_t dir = (output >= 0) ? MOTOR_FORWARD : MOTOR_REVERSE;
+    Motor_SetSpeed(pwm, dir);
 
     static uint32_t debug = 0;
     if (now - debug > 500)
 	{
         debug = now;
-        //printf("PID: T=%.1f A=%.1f O=%d I=%.1f\n",
-        //       corrected_target, enc.speed_rpm, pwm, speed_pid.integral);
+        printf("PID: T=%.1f A=%.1f O=%d I=%.1f\n",
+               corrected_target, enc.speed_rpm, pwm, speed_pid.integral);
     }
 }
 
@@ -372,15 +372,15 @@ void Motor_AutoTune(void)
     Delay_ms(1000);
 
     // Step 3: PID自整定
-    //float test_speed = (max_fwd + max_rev) / 2.0f;
-    //if (test_speed > 100)
-	//{
-        //PID_AutoTune(&speed_pid, test_speed, Motor_GetSpeed, 0.1f, 20);
-    //}
-	//else
-	//{
-        //printf("Speed too low for auto-tune.\n");
-    //}
+    float test_speed = (max_fwd + max_rev) / 2.0f;
+    if (test_speed > 100)
+	{
+        PID_AutoTune(&speed_pid, test_speed, Motor_GetSpeed, 0.1f, 20);
+    }
+	else
+	{
+        printf("Speed too low for auto-tune.\n");
+    }
     motor_control.state = MOTOR_STATE_IDLE;
     printf("Auto-tuning done.\n");
 }
@@ -400,8 +400,8 @@ void Motor_Diagnostic(void)
     printf("Direction: %d\n", st.direction);
     printf("Error code: 0x%02X\n", st.error_code);
     printf("Fault count: %d\n", motor_control.error_count);
-    //printf("PID integral: %.2f\n", speed_pid.integral);
-    //printf("PID output: %.2f\n", speed_pid.output);
+    printf("PID integral: %.2f\n", speed_pid.integral);
+    printf("PID output: %.2f\n", speed_pid.output);
     printf("Current: %dmA\n", Motor_GetCurrent());
     printf("==============================\n");
 }
