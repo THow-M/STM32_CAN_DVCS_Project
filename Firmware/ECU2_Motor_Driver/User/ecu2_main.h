@@ -35,6 +35,7 @@ typedef enum
 
 //函数声明
 void System_Init(void);
-
+void Control_Loop(void);
+void Communication_Handler(void);
 
 #endif

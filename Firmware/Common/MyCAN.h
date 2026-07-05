@@ -52,7 +52,7 @@ typedef struct
 {
 	int16_t actual_speed;         //实际速度（RPM）
 	uint16_t current;             //电流（mA）
-	uint8_t temperature;          //温度（）
+	//uint8_t temperature;          //温度（）
 	uint8_t status;               //状态位
 	uint16_t resevered;           //保留
 } MotorStatus_Data;
@@ -93,7 +93,7 @@ uint8_t MyCAN_Send_Message(uint32_t ID,uint8_t Len,uint8_t* Data);
 uint8_t MyCAN_Receive_Message(uint32_t* ID, uint8_t* Len, uint8_t* Data);
 void MyCAN_Send_Heartbeat(uint8_t node_id, uint8_t status, uint8_t error_code, uint32_t uptime);
 void MyCAN_Send_SpeedCmd(int16_t speed, uint8_t direction, uint8_t acceleration);
-void MyCAN_Send_MotorStatus(int16_t speed, uint16_t current, uint8_t temp, uint8_t status);
+void MyCAN_Send_MotorStatus(int16_t speed, uint16_t current, /*uint8_t temp,*/ uint8_t status);
 void MyCAN_Send_SensorData(uint16_t distance, int16_t pitch, int16_t roll, int16_t yaw, uint16_t voltage);
 void MyCAN_Send_SystemCtrl(uint8_t command, uint8_t param1, uint8_t param2);
 void MyCAN_Send_ErrorReport(uint8_t node_id, uint8_t error_type, uint16_t error_code);

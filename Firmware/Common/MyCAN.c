@@ -198,12 +198,12 @@ void MyCAN_Send_SpeedCmd(int16_t speed, uint8_t direction, uint8_t acceleration)
   *参  数：status 状态位
   *返回值：无
   */
-void MyCAN_Send_MotorStatus(int16_t speed, uint16_t current, uint8_t temp, uint8_t status)
+void MyCAN_Send_MotorStatus(int16_t speed, uint16_t current, /*uint8_t temp,*/ uint8_t status)
 {
     MotorStatus_Data motor;
     motor.actual_speed = speed;
     motor.current = current;
-    motor.temperature = temp;
+    //motor.temperature = temp;
     motor.status = status;
     
     MyCAN_Send_Message(MSG_ID_MOTOR_STATUS, sizeof(MotorStatus_Data), (uint8_t*)&motor);

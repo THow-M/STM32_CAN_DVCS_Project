@@ -41,6 +41,10 @@ SystemCtrl_Data system_ctrl = {0};
 uint8_t heartbeat_status[NODE_NUM] = {0};
 uint32_t heartbeat_time[NODE_NUM] = {0};
 
+/** 函  数：系统初始化
+  * 参  数：无
+  * 返回值：无
+  */
 void System_Init(void)
 {
 	Serial_Init(DEBUG_BAUDRATE);
@@ -101,7 +105,10 @@ void System_Init(void)
     LED_ON();
 }
 
-// 主控制循环
+/** 函  数：主控制循环
+  * 参  数：无
+  * 返回值：无
+  */
 void Control_Loop(void)
 {
     uint32_t current_time = HAL_GetTick();
@@ -163,6 +170,102 @@ void Control_Loop(void)
                 printf("PID: Target=%.1f, Actual=%.1f, Output=%d, Dir=%d\r\n",
                        target_speed_rpm, actual_speed_rpm, speed, motor_direction);
             }
+        }
+    }
+}
+
+/** 函  数：通信处理
+  * 参  数：无
+  * 返回值：无
+  */
+void Communication_Handler(void)
+{
+    uint32_t current_time = HAL_GetTick();
+    
+    // 1. CAN数据处理
+    uint32_t can_id;
+    uint8_t can_data[8];
+    uint8_t can_len;
+    
+    while(MyCAN_Receive_Message(&can_id, can_data, &can_len))
+	{
+        //MyCAN_Data_Handler(can_id, can_data, can_len);
+    }
+    
+    // 2. 发送心跳包
+    if(current_time - last_heartbeat_time > HEARTBEAT_PERIOD)
+	{
+        last_heartbeat_time = current_time;
+        
+        uint8_t status = (system_state == SYS_ERROR) ? STATUS_ERROR : STATUS_NORMAL;
+        MyCAN_Send_Heartbeat(NODE_ID, status, error_code, system_uptime);
+        
+        // LED指示
+        //LEDx_ON();
+    }
+    
+    // 3. 发送电机状态
+    if(current_time - last_can_send_time > 100)
+	{  // 100ms
+        last_can_send_time = current_time;
+        
+        if(can_connected)
+		{
+            // 获取电机状态
+            Motor_Status motor_status = Motor_GetStatus();
+            Encoder_Data encoder = Encoder_GetData();
+            //uint8_t temperature = Motor_GetTemperature();
+            uint16_t current = Motor_GetCurrent();
+            
+            // 组合状态位
+            uint8_t status_byte = 0;
+            if(motor_status.state == MOTOR_STATE_ERROR) status_byte |= 0x01;
+            if(motor_status.protection_status & 0x01) status_byte |= 0x02;  // 过流
+            if(motor_status.protection_status & 0x02) status_byte |= 0x04;  // 过热
+            if(motor_status.protection_status & 0x04) status_byte |= 0x08;  // 堵转
+            
+            MyCAN_Send_MotorStatus((int16_t)encoder.speed_rpm, current, /*temperature,*/ status_byte);
+            
+            // LED指示
+            //LEDx_ON();
+        }
+    }
+	else if(current_time - last_can_send_time > 10)
+	{
+        //LEDx_OFF();
+    }
+    
+    // 4. 检查CAN连接状态
+    static uint32_t last_can_msg_time = 0;
+    static uint8_t can_msg_received = 0;
+    
+    for(uint8_t i = 0; i < NODE_NUM; i++)
+	{
+        if(i == NODE_ID - 1) continue;  // 跳过自己
+        
+        if(current_time - heartbeat_time[i] < HEARTBEAT_TIMEOUT)
+		{
+            can_msg_received = 1;
+            last_can_msg_time = current_time;
+        }
+    }
+    
+    if(can_msg_received && current_time - last_can_msg_time < CAN_TIMEOUT)
+	{
+        can_connected = 1;
+        //LEDx_ON();  // CAN连接指示
+    }
+	else
+	{
+        can_connected = 0;
+        //LEDx_OFF();
+        
+        // 如果长时间没有收到CAN消息，切换到手动模式
+        if(control_mode == CONTROL_MODE_AUTO)
+		{
+            printf("CAN disconnected, switching to manual mode\r\n");
+            control_mode = CONTROL_MODE_MANUAL;
+            Motor_SetTargetSpeed(0, MOTOR_STOP);
         }
     }
 }
