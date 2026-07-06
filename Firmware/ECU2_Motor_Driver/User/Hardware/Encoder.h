@@ -23,7 +23,7 @@ int32_t Encoder_GetCount(void);
 int32_t Encoder_GetTotalPulses(void);
 float Encoder_CalculateSpeed(uint16_t sample_time_ms);
 Encoder_Data Encoder_GetData(void);
-//void Encoder_Calibrate(void);
+void Encoder_Calibrate(void);
 uint8_t Encoder_Fault_Check(void);
 void Encoder_Diagnostic(void);
 

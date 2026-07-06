@@ -12,6 +12,7 @@
 #include "Encoder.h"
 #include "Motor.h"
 #include <stdio.h>
+#include <string.h>
 
 // 全局变量
 System_State system_state = SYS_IDLE;
@@ -189,7 +190,7 @@ void Communication_Handler(void)
     
     while(MyCAN_Receive_Message(&can_id, can_data, &can_len))
 	{
-        //MyCAN_Data_Handler(can_id, can_data, can_len);
+        MyCAN_Data_Handler(can_id, can_len,can_data);
     }
     
     // 2. 发送心跳包
@@ -267,6 +268,139 @@ void Communication_Handler(void)
             control_mode = CONTROL_MODE_MANUAL;
             Motor_SetTargetSpeed(0, MOTOR_STOP);
         }
+    }
+}
+
+/** 函  数：CAN数据处理
+  * 参  数：id 要处理的报文id
+  * 参  数：len 要处理的报文数据长度
+  * 参  数：data 要处理的报文数据
+  * 返回值：无
+  */
+void MyCAN_Data_Handler(uint32_t id, uint8_t len,uint8_t* data)
+{
+    switch(id)
+	{
+        case MSG_ID_HEARTBEAT:
+		{
+            HeartBeat_Data *hb = (HeartBeat_Data*)data;
+            if(hb->node_id >= 1 && hb->node_id <= NODE_NUM)
+			{
+                heartbeat_time[hb->node_id - 1] = HAL_GetTick();
+                
+                if(hb->node_id == NODE_ID_ECU1)
+				{  // 来自ECU1
+                    can_connected = 1;
+                }
+            }
+            break;
+        }
+            
+        case MSG_ID_SPEED_CMD:
+		{
+            if(len >= sizeof(SpeedCmd_Data))
+			{
+                memcpy(&speed_cmd, data, sizeof(SpeedCmd_Data));
+                
+                printf("Received SpeedCmd: %d RPM, Dir=%d\r\n", 
+                       speed_cmd.target_speed, speed_cmd.direction);
+                
+                // 处理速度指令
+                if(system_state != SYS_ERROR)
+				{
+                    target_speed_rpm = speed_cmd.target_speed;
+                    motor_direction = speed_cmd.direction;
+                    
+                    if(control_mode == CONTROL_MODE_MANUAL)
+					{
+                        // 手动模式直接控制
+                        if(motor_direction == MOTOR_STOP)
+						{
+                            Motor_SetTargetSpeed(0, MOTOR_STOP);
+                            system_state = SYS_IDLE;
+                        }
+						else
+						{
+                            int16_t speed = target_speed_rpm / 10;  // 转换为0-1000范围
+                            Motor_SetTargetSpeed(speed, motor_direction);
+                            system_state = SYS_RUN;
+                        }
+                    }
+					else if(control_mode == CONTROL_MODE_AUTO)
+					{
+                        // 自动模式，PID控制会自动处理
+                        if(motor_direction == MOTOR_STOP)
+						{
+                            target_speed_rpm = 0;
+                            system_state = SYS_IDLE;
+                        }
+						else
+						{
+                            system_state = SYS_RUN;
+                        }
+                    }
+                    
+                    // LED指示
+					if(system_state == SYS_RUN)
+					{
+						LED_ON();
+					}
+                }
+            }
+            break;
+        }
+            
+        case MSG_ID_SYSTEM_CTRL:
+		{
+            if(len >= sizeof(SystemCtrl_Data))
+			{
+                memcpy(&system_ctrl, data, sizeof(SystemCtrl_Data));
+                
+                printf("Received SystemCtrl: Command=%d\r\n", system_ctrl.command);
+                
+                switch(system_ctrl.command)
+				{
+                    case SYS_CMD_START:
+                        system_state = SYS_RUN;
+                        control_mode = CONTROL_MODE_AUTO;
+                        printf("System started in auto mode\r\n");
+                        break;
+                        
+                    case SYS_CMD_STOP:
+                        Motor_SetTargetSpeed(0, MOTOR_STOP);
+                        system_state = SYS_IDLE;
+                        printf("System stopped\r\n");
+                        break;
+                        
+                    case SYS_CMD_RESET:
+                        NVIC_SystemReset();
+                        break;
+                        
+                    case SYS_CMD_MANUAL:
+                        control_mode = CONTROL_MODE_MANUAL;
+                        printf("Switched to manual mode\r\n");
+                        break;
+                        
+                    case SYS_CMD_AUTO:
+                        control_mode = CONTROL_MODE_AUTO;
+                        printf("Switched to auto mode\r\n");
+                        break;
+                        
+                    case SYS_CMD_CALIBRATE:
+                        Encoder_Calibrate();
+                        break;
+                        
+                    case SYS_CMD_DIAGNOSTIC:
+                        //System_Diagnostic();
+                        break;
+                }
+            }
+            break;
+        }
+            
+        default:
+            // 其他报文
+            break;
     }
 }
 

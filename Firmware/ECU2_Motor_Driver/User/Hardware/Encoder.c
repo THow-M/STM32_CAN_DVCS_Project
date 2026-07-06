@@ -190,7 +190,7 @@ Encoder_Data Encoder_GetData(void)
   * 参  数：无
   * 返回值：无
   */
-/*void Encoder_Calibrate(void)
+void Encoder_Calibrate(void)
 {
     printf("Starting encoder calibration...\r\n");
     
@@ -209,7 +209,7 @@ Encoder_Data Encoder_GetData(void)
     // 这里可以自行添加自动校准逻辑
     
     printf("Encoder calibration completed.\r\n");
-}*/
+}
 
 /** 函  数：编码器故障检测
   * 参  数：无
