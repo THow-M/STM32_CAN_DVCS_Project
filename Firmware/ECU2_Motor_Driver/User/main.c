@@ -404,6 +404,57 @@ void MyCAN_Data_Handler(uint32_t id, uint8_t len,uint8_t* data)
     }
 }
 
+/** 函  数：系统诊断
+  * 参  数：无
+  * 返回值：无
+  */
+void System_Diagnostic(void)
+{
+    printf("\r\n=== System Diagnostic ===\r\n");
+    printf("System State: %d\r\n", system_state);
+    printf("Control Mode: %s\r\n", 
+           control_mode == CONTROL_MODE_MANUAL ? "Manual" : "Auto");
+    printf("Uptime: %d seconds\r\n", system_uptime);
+    printf("Error Code: 0x%02X\r\n", error_code);
+    printf("CAN Connected: %s\r\n", can_connected ? "Yes" : "No");
+    printf("\r\n");
+    
+    // 电机状态
+    Motor_Status motor = Motor_GetStatus();
+    printf("Motor State: %d\r\n", motor.state);
+    printf("Motor Speed: %d/%d\r\n", motor.speed, motor.target_speed);
+    printf("Motor Direction: %d\r\n", motor.direction);
+    printf("Motor Protection: 0x%02X\r\n", motor.protection_status);
+    printf("\r\n");
+    
+    // 编码器状态
+    Encoder_Data encoder = Encoder_GetData();
+    printf("Encoder Speed: %.2f RPM\r\n", encoder.speed_rpm);
+    printf("Encoder Direction: %d\r\n", encoder.direction);
+    printf("Encoder Position: %d\r\n", encoder.position);
+    printf("Encoder Valid: %s\r\n", encoder.valid ? "Yes" : "No");
+    printf("\r\n");
+    
+    // PID状态
+    printf("PID Target: %.1f RPM\r\n", target_speed_rpm);
+    printf("PID Actual: %.1f RPM\r\n", actual_speed_rpm);
+    printf("PID Output: %.1f\r\n", pid_output);
+    printf("PID Integral: %.3f\r\n", speed_pid.integral);
+    printf("\r\n");
+    
+    // 心跳状态
+    for(uint8_t i = 0; i < NODE_NUM; i++)
+	{
+        uint32_t time_since = HAL_GetTick() - heartbeat_time[i];
+        printf("Node %d: %s (%.1fs ago)\r\n", 
+               i + 1, 
+               time_since < HEARTBEAT_TIMEOUT ? "Online" : "Offline",
+               time_since / 1000.0f);
+    }
+    
+    printf("===========================\r\n\r\n");
+}
+
 int main(void) 
 {
 	LED_ON();

@@ -38,5 +38,6 @@ void System_Init(void);
 void Control_Loop(void);
 void Communication_Handler(void);
 void MyCAN_Data_Handler(uint32_t id, uint8_t len,uint8_t* data);
+void System_Diagnostic(void);
 
 #endif
