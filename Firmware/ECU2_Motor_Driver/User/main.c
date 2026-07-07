@@ -19,6 +19,8 @@ System_State system_state = SYS_IDLE;
 uint32_t system_uptime = 0;
 uint8_t error_code = ERROR_NONE;
 uint8_t can_connected = 0;
+static uint8_t led_blink_state = 0;
+
 
 // 控制变量
 PID_Controller speed_pid;
@@ -35,6 +37,7 @@ uint32_t last_heartbeat_time = 0;
 uint32_t last_status_time = 0;
 uint32_t last_protection_check = 0;
 uint32_t last_debug_time = 0;
+uint32_t last_led_time = 0;
 
 // CAN接收数据
 SpeedCmd_Data speed_cmd = {0};
@@ -90,8 +93,8 @@ void System_Init(void)
 	Delay_ms(200);
 	
 	// 编码器校准
-    //printf("Calibrating encoder...\r\n");
-    //Encoder_Calibrate();
+    printf("Calibrating encoder...\r\n");
+    Encoder_Calibrate();
     
     // 启动系统
     system_state = SYS_READY;
@@ -391,7 +394,7 @@ void MyCAN_Data_Handler(uint32_t id, uint8_t len,uint8_t* data)
                         break;
                         
                     case SYS_CMD_DIAGNOSTIC:
-                        //System_Diagnostic();
+                        System_Diagnostic();
                         break;
                 }
             }
@@ -455,6 +458,58 @@ void System_Diagnostic(void)
     printf("===========================\r\n\r\n");
 }
 
+/**
+  * 函  数：LED状态更新
+  * 参  数：无
+  * 返回值：无
+  * 注  释：根据系统状态控制LED闪烁模式
+  */
+static void LED_State_Update(void)
+{
+    uint32_t current_time = HAL_GetTick();
+    uint32_t blink_period = 0;
+
+    switch (system_state)
+    {
+        case SYS_IDLE:
+            blink_period = 1000;  /* 慢闪 1Hz */
+            break;
+        case SYS_READY:
+            blink_period = 0;     /* 常亮 */
+            break;
+        case SYS_RUN:
+            blink_period = 200;   /* 快闪 5Hz */
+            break;
+        case SYS_ERROR:
+            blink_period = 100;   /* 极快闪 */
+            break;
+        case SYS_CALIBRATING:
+            blink_period = 500;   /* 中闪 2Hz */
+            break;
+        default:
+            blink_period = 1000;
+            break;
+    }
+
+    if (blink_period == 0)
+    {
+        LED_ON();
+    }
+    else if (current_time - last_led_time >= blink_period)
+    {
+        last_led_time = current_time;
+        led_blink_state = !led_blink_state;
+        if (led_blink_state)
+        {
+            LED_ON();
+        }
+        else
+        {
+            LED_OFF();
+        }
+    }
+}
+
 int main(void) 
 {
 	System_Init();
@@ -487,27 +542,36 @@ int main(void)
         Communication_Handler();
 		
 		//状态机
-		switch(system_state)
+		switch (system_state)
 		{
             case SYS_IDLE:
-                // 空闲状态
+                /* 空闲状态：电机停止，PID清零 */
+                PID_Reset(&speed_pid);
+                LED_State_Update();
                 break;
-                
+
             case SYS_READY:
-                // 准备就绪
+                /* 准备就绪：等待指令 */
+                LED_State_Update();
                 break;
-                
+
             case SYS_RUN:
-                // 运行状态
+                /* 运行状态：PID控制已在Control_Loop中执行 */
+                LED_State_Update();
                 break;
-                
+
             case SYS_ERROR:
-                // 错误状态
+                /* 错误状态 */
                 Error_Handler();
                 break;
-                
+
             case SYS_CALIBRATING:
-                // 校准状态
+                /* 校准状态 */
+                LED_State_Update();
+                break;
+
+            default:
+                system_state = SYS_IDLE;
                 break;
         }
         
