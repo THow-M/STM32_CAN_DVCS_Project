@@ -457,15 +457,110 @@ void System_Diagnostic(void)
 
 int main(void) 
 {
-	LED_ON();
+	System_Init();
 	
-	
+	printf("ECU2 Main Loop Started\r\n");
 	
 	while (1)
 	{
+		uint32_t current_time = HAL_GetTick();
+        
+        // 更新运行时间
+        if(current_time - last_status_time >= 1000)
+		{  // 1秒
+            last_status_time = current_time;
+            system_uptime++;
+            
+            // 每秒输出状态
+            if(system_uptime % 5 == 0)
+			{  // 每5秒
+                Encoder_Data encoder = Encoder_GetData();
+                printf("Uptime: %dus, Speed: %.1f RPM, State: %d\r\n",
+                       system_uptime, encoder.speed_rpm, system_state);
+            }
+        }
+        
+        // 控制循环
+        Control_Loop();
+        
+        // 通信处理
+        Communication_Handler();
 		
+		//状态机
+		switch(system_state)
+		{
+            case SYS_IDLE:
+                // 空闲状态
+                break;
+                
+            case SYS_READY:
+                // 准备就绪
+                break;
+                
+            case SYS_RUN:
+                // 运行状态
+                break;
+                
+            case SYS_ERROR:
+                // 错误状态
+                Error_Handler();
+                break;
+                
+            case SYS_CALIBRATING:
+                // 校准状态
+                break;
+        }
+        
+        // 简单延时
+        Delay_ms(1);
 
 	}
+}
+
+// 错误处理
+void Error_Handler(void)
+{
+    static uint32_t error_start_time = 0;
+    uint32_t current_time = HAL_GetTick();
+    
+    if(error_start_time == 0)
+	{
+        error_start_time = current_time;
+        printf("Entering error state. Code: 0x%02X\r\n", error_code);
+    }
+    
+    // LED快速闪烁表示错误
+    static uint32_t last_blink = 0;
+    if(current_time - last_blink > 100)
+	{
+        last_blink = current_time;
+        static uint8_t led_state = 0;
+        led_state = !led_state;
+        
+        GPIO_WriteBit(GPIOB, GPIO_Pin_12, led_state ? Bit_SET : Bit_RESET);
+        GPIO_WriteBit(GPIOB, GPIO_Pin_13, led_state ? Bit_SET : Bit_RESET);
+        GPIO_WriteBit(GPIOB, GPIO_Pin_14, led_state ? Bit_SET : Bit_RESET);
+        GPIO_WriteBit(GPIOB, GPIO_Pin_15, led_state ? Bit_SET : Bit_RESET);
+    }
+    
+    // 尝试自动恢复
+    if(current_time - error_start_time > 5000)
+	{  // 5秒后尝试恢复
+        printf("Attempting to recover from error...\r\n");
+        
+        // 清除错误标志
+        if(system_state == SYS_ERROR)
+		{
+            system_state = SYS_IDLE;
+            error_code = ERROR_NONE;
+            error_start_time = 0;
+            
+            // 重置控制器
+            PID_Reset(&speed_pid);
+            
+            printf("Error recovery successful.\r\n");
+        }
+    }
 }
 
 void TIM2_IRQHandler(void)
