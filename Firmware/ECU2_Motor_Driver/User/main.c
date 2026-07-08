@@ -60,6 +60,8 @@ void System_Init(void)
     printf("  Build Date: %s %s\r\n", __DATE__, __TIME__);
     printf("================================\r\n\r\n");
 	
+	Timer_Init();
+	
     LED_Init();
     
     MyCAN_Init(CAN_BAUDRATE);
@@ -515,6 +517,8 @@ int main(void)
 	System_Init();
 	
 	printf("ECU2 Main Loop Started\r\n");
+	
+	Motor_SetTargetSpeed(500, 1);
 	
 	while (1)
 	{
