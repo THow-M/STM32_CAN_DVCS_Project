@@ -512,13 +512,66 @@ static void LED_State_Update(void)
     }
 }
 
+// 测试函数
+void Motor_Test_Suite(void)
+{
+    printf("Starting motor test suite...\r\n");
+    
+    // 测试1：PWM输出测试
+    printf("\nTest 1: PWM Output Test\r\n");
+    for(int i = 0; i <= 1000; i += 100)
+	{
+        Motor_SetTargetSpeed(i, MOTOR_FORWARD);
+        printf("PWM: %d/1000\r\n", i);
+        Delay_ms(500);
+    }
+    Motor_SetTargetSpeed(0, MOTOR_STOP);
+    Delay_ms(1000);
+    
+    // 测试2：编码器测试
+    printf("\nTest 2: Encoder Test\r\n");
+    for(int i = 0; i < 10; i++)
+	{
+        Encoder_Data encoder = Encoder_GetData();
+        printf("Encoder: Speed=%.2f RPM, Dir=%d, Pos=%d\r\n",
+               encoder.speed_rpm, encoder.direction, encoder.position);
+        Delay_ms(100);
+    }
+    
+    // 测试3：PID控制测试
+    printf("\nTest 3: PID Control Test\r\n");
+    control_mode = CONTROL_MODE_AUTO;
+	Motor_SetControlMode(control_mode);
+    target_speed_rpm = 300.0f;
+    system_state = SYS_RUN;
+    
+    for(int i = 0; i < 50; i++)
+	{  // 测试5秒
+        Control_Loop();
+        Delay_ms(100);
+        
+        if(i % 10 == 0)
+		{
+            Encoder_Data encoder = Encoder_GetData();
+            printf("PID: Target=%.1f, Actual=%.1f, Error=%.1f\r\n",
+                   target_speed_rpm, encoder.speed_rpm, 
+                   target_speed_rpm - encoder.speed_rpm);
+        }
+    }
+    
+    Motor_SetTargetSpeed(0, MOTOR_STOP);
+    system_state = SYS_IDLE;
+    
+    printf("\nMotor test suite completed.\r\n");
+}
+
 int main(void) 
 {
 	System_Init();
 	
 	printf("ECU2 Main Loop Started\r\n");
 	
-	Motor_SetTargetSpeed(500, 1);
+	//Motor_Test_Suite();
 	
 	while (1)
 	{
@@ -534,7 +587,7 @@ int main(void)
             if(system_uptime % 5 == 0)
 			{  // 每5秒
                 Encoder_Data encoder = Encoder_GetData();
-                printf("Uptime: %dus, Speed: %.1f RPM, State: %d\r\n",
+                printf("Uptime: %ds, Speed: %.1f RPM, State: %d\r\n",
                        system_uptime, encoder.speed_rpm, system_state);
             }
         }

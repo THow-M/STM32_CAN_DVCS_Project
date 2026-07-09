@@ -127,7 +127,7 @@ void Motor_SetControlMode(uint8_t mode)
     }
 	else
 	{
-        //speed_pid.enabled = 1;
+        speed_pid.enabled = 1;
     }
 	
     printf("Control mode: %s\n", mode == CONTROL_MODE_MANUAL ? "Manual" : "Auto");
