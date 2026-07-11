@@ -28,5 +28,7 @@ void MyI2C_Stop(void);
 uint8_t MyI2C_Wait_Ack(void);
 void MyI2C_Ack(void);
 void MyI2C_NAck(void);
+void MyI2C_Send_Byte(uint8_t data);
+uint8_t MyI2C_Read_Byte(uint8_t ack);
 
 #endif

@@ -115,3 +115,64 @@ void MyI2C_NAck(void)
     I2C_SCL_LOW();
     I2C_DELAY();
 }
+
+// 发送一个字节
+void MyI2C_Send_Byte(uint8_t data)
+{
+    uint8_t i;
+    SDA_OUT();  // SDA设置为输出
+    
+    for(i = 0; i < 8; i++)
+{
+        if(data & 0x80)
+		{
+            I2C_SDA_HIGH();
+        }
+		else
+		{
+            I2C_SDA_LOW();
+        }
+        
+        I2C_DELAY();
+        I2C_SCL_HIGH();
+        I2C_DELAY();
+        I2C_SCL_LOW();
+        I2C_DELAY();
+        
+        data <<= 1;
+    }
+}
+
+// 接收一个字节
+uint8_t MyI2C_Read_Byte(uint8_t ack)
+{
+    uint8_t i, receive = 0;
+    SDA_IN();  // SDA设置为输入
+    
+    for(i = 0; i < 8; i++)
+	{
+        receive <<= 1;
+        
+        I2C_SCL_HIGH();
+        I2C_DELAY();
+        
+        if(READ_SDA())
+		{
+            receive |= 0x01;
+        }
+        
+        I2C_SCL_LOW();
+        I2C_DELAY();
+    }
+    
+    if(ack)
+	{
+        MyI2C_Ack();
+    }
+	else
+	{
+        MyI2C_NAck();
+    }
+    
+    return receive;
+}
