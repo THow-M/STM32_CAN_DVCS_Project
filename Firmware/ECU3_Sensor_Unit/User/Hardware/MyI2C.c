@@ -248,3 +248,92 @@ uint8_t MyI2C_Read_Byte_From_Reg(uint8_t dev_addr, uint8_t reg_addr, uint8_t *da
     MyI2C_Stop();
     return 0;  // 成功
 }
+
+// 从指定设备读取多个字节
+uint8_t MyI2C_Read_Bytes(uint8_t dev_addr, uint8_t reg_addr, uint8_t *data, uint16_t len)
+{
+    uint16_t i;
+    
+    MyI2C_Start();
+    
+    // 发送设备地址（写模式）
+    MyI2C_Send_Byte(dev_addr & 0xFE);  // 清空最后一位（写）
+    if(MyI2C_Wait_Ack())
+	{
+        MyI2C_Stop();
+        return 1;  // 失败
+    }
+    
+    // 发送寄存器地址
+    MyI2C_Send_Byte(reg_addr);
+    if(MyI2C_Wait_Ack())
+	{
+        MyI2C_Stop();
+        return 2;  // 失败
+    }
+    
+    // 重新启动
+    MyI2C_Start();
+    
+    // 发送设备地址（读模式）
+    MyI2C_Send_Byte(dev_addr | 0x01);  // 设置最后一位（读）
+    if(MyI2C_Wait_Ack())
+	{
+        MyI2C_Stop();
+        return 3;  // 失败
+    }
+    
+    // 读取数据
+    for(i = 0; i < len; i++)
+	{
+        if(i == len - 1)
+		{
+            data[i] = MyI2C_Read_Byte(0);  // 最后一个字节，发送NACK
+        }
+		else
+		{
+            data[i] = MyI2C_Read_Byte(1);  // 发送ACK
+        }
+    }
+    
+    MyI2C_Stop();
+    return 0;  // 成功
+}
+
+// 向指定设备写入多个字节
+uint8_t MyI2C_Write_Bytes(uint8_t dev_addr, uint8_t reg_addr, uint8_t *data, uint16_t len)
+{
+    uint16_t i;
+    
+    MyI2C_Start();
+    
+    // 发送设备地址（写模式）
+    MyI2C_Send_Byte(dev_addr & 0xFE);  // 清空最后一位（写）
+    if(MyI2C_Wait_Ack())
+	{
+        MyI2C_Stop();
+        return 1;  // 失败
+    }
+    
+    // 发送寄存器地址
+    MyI2C_Send_Byte(reg_addr);
+    if(MyI2C_Wait_Ack())
+	{
+        MyI2C_Stop();
+        return 2;  // 失败
+    }
+    
+    // 发送数据
+    for(i = 0; i < len; i++)
+	{
+        MyI2C_Send_Byte(data[i]);
+        if(MyI2C_Wait_Ack())
+		{
+            MyI2C_Stop();
+            return 3;  // 失败
+        }
+    }
+    
+    MyI2C_Stop();
+    return 0;  // 成功
+}
