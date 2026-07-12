@@ -13,7 +13,10 @@
 // 软件I2C延迟
 #define I2C_DELAY()     Delay_us(5)
 
-// I2C初始化
+/** 函  数：I2C初始化
+  * 参  数：无
+  * 返回值：无
+  */
 void MyI2C_Init(void)
 {
     GPIO_InitTypeDef GPIO_InitStructure;
@@ -33,7 +36,10 @@ void MyI2C_Init(void)
     printf("I2C initialized (Software)\n");
 }
 
-// 产生起始信号
+/** 函  数：产生起始信号
+  * 参  数：无
+  * 返回值：无
+  */
 void MyI2C_Start(void)
 {
     SDA_OUT();  // SDA设置为输出
@@ -48,7 +54,10 @@ void MyI2C_Start(void)
     I2C_DELAY();
 }
 
-// 产生停止信号
+/** 函  数：产生停止信号
+  * 参  数：无
+  * 返回值：无
+  */
 void MyI2C_Stop(void)
 {
     SDA_OUT();  // SDA设置为输出
@@ -62,7 +71,10 @@ void MyI2C_Stop(void)
     I2C_DELAY();
 }
 
-// 等待ACK
+/** 函  数：等待ACK
+  * 参  数：无
+  * 返回值：0 收到应答位，1 未收到应答
+  */
 uint8_t MyI2C_Wait_Ack(void)
 {
     uint8_t ucErrTime = 0;
@@ -88,7 +100,10 @@ uint8_t MyI2C_Wait_Ack(void)
     return 0;  // 收到ACK
 }
 
-// 发送ACK
+/** 函  数：发送ACK
+  * 参  数：无
+  * 返回值：无
+  */
 void MyI2C_Ack(void)
 {
     SDA_OUT();  // SDA设置为输出
@@ -102,7 +117,10 @@ void MyI2C_Ack(void)
     I2C_DELAY();
 }
 
-// 发送NACK
+/** 函  数：发送NACK
+  * 参  数：无
+  * 返回值：无
+  */
 void MyI2C_NAck(void)
 {
     SDA_OUT();  // SDA设置为输出
@@ -116,7 +134,10 @@ void MyI2C_NAck(void)
     I2C_DELAY();
 }
 
-// 发送一个字节
+/** 函  数：发送一个字节
+  * 参  数：data 要发送的数据
+  * 返回值：无
+  */
 void MyI2C_Send_Byte(uint8_t data)
 {
     uint8_t i;
@@ -143,7 +164,10 @@ void MyI2C_Send_Byte(uint8_t data)
     }
 }
 
-// 接收一个字节
+/** 函  数：接收一个字节
+  * 参  数：ack 应答位
+  * 返回值：receive 接收到的一个字节
+  */
 uint8_t MyI2C_Read_Byte(uint8_t ack)
 {
     uint8_t i, receive = 0;
@@ -177,7 +201,12 @@ uint8_t MyI2C_Read_Byte(uint8_t ack)
     return receive;
 }
 
-// 向指定设备写入一个字节
+/** 函  数：向指定设备写入一个字节
+  * 参  数：dev_addr 被写入设备的地址
+  * 参  数：reg_addr 被写入寄存器的地址
+  * 参  数：data 要写入的数据
+  * 返回值：0 发送成功，1 发送设备地址失败，2 发送寄存器地址失败，3 发送数据失败
+  */
 uint8_t MyI2C_Write_Byte(uint8_t dev_addr, uint8_t reg_addr, uint8_t data)
 {
     MyI2C_Start();
@@ -210,7 +239,12 @@ uint8_t MyI2C_Write_Byte(uint8_t dev_addr, uint8_t reg_addr, uint8_t data)
     return 0;  // 成功
 }
 
-// 从指定设备读取一个字节
+/** 函  数：从指定设备读取一个字节
+  * 参  数：dev_addr 被读取设备的地址
+  * 参  数：reg_addr 被读取寄存器的地址
+  * 参  数：data 读取的数据
+  * 返回值：0 发送成功，1 发送设备地址（写模式）失败，2 发送寄存器地址失败，3 发送设备地址（读模式）失败
+  */
 uint8_t MyI2C_Read_Byte_From_Reg(uint8_t dev_addr, uint8_t reg_addr, uint8_t *data)
 {
     MyI2C_Start();
@@ -249,8 +283,14 @@ uint8_t MyI2C_Read_Byte_From_Reg(uint8_t dev_addr, uint8_t reg_addr, uint8_t *da
     return 0;  // 成功
 }
 
-// 从指定设备读取多个字节
-uint8_t MyI2C_Read_Bytes(uint8_t dev_addr, uint8_t reg_addr, uint8_t *data, uint16_t len)
+/** 函  数：从指定设备读取多个字节
+  * 参  数：dev_addr 被读取设备的地址
+  * 参  数：reg_addr 被读取寄存器的地址
+  * 参  数：len 要读取的数据长度
+  * 参  数：data 读取的数据
+  * 返回值：0 发送成功，1 发送设备地址（写模式）失败，2 发送寄存器地址失败，3 发送设备地址（读模式）失败
+  */
+uint8_t MyI2C_Read_Bytes(uint8_t dev_addr, uint8_t reg_addr, uint16_t len, uint8_t *data)
 {
     uint16_t i;
     
@@ -300,8 +340,14 @@ uint8_t MyI2C_Read_Bytes(uint8_t dev_addr, uint8_t reg_addr, uint8_t *data, uint
     return 0;  // 成功
 }
 
-// 向指定设备写入多个字节
-uint8_t MyI2C_Write_Bytes(uint8_t dev_addr, uint8_t reg_addr, uint8_t *data, uint16_t len)
+/** 函  数：向指定设备写入多个字节
+  * 参  数：dev_addr 被写入设备的地址
+  * 参  数：reg_addr 被写入寄存器的地址
+  * 参  数：len 要写入的数据长度
+  * 参  数：data 要写入的数据
+  * 返回值：0 发送成功，1 发送设备地址（写模式）失败，2 发送寄存器地址失败，3 发送数据失败
+  */
+uint8_t MyI2C_Write_Bytes(uint8_t dev_addr, uint8_t reg_addr, uint16_t len, uint8_t *data)
 {
     uint16_t i;
     
@@ -336,4 +382,39 @@ uint8_t MyI2C_Write_Bytes(uint8_t dev_addr, uint8_t reg_addr, uint8_t *data, uin
     
     MyI2C_Stop();
     return 0;  // 成功
+}
+
+/** 函  数：I2C扫描设备
+  * 参  数：无
+  * 返回值：无
+  */
+void MyI2C_Scan_Devices(void)
+{
+    uint8_t i, ret;
+    uint8_t found = 0;
+    
+    printf("Scanning I2C bus...\n");
+    
+    for(i = 1; i < 128; i++)
+	{
+        MyI2C_Start();
+        MyI2C_Send_Byte(i << 1);  // 地址左移一位
+        ret = MyI2C_Wait_Ack();
+        MyI2C_Stop();
+        
+        if(ret == 0)
+		{
+            printf("Found device at address: 0x%02X\n", i);
+            found++;
+        }
+    }
+    
+    if(found == 0)
+	{
+        printf("No I2C devices found.\n");
+    }
+	else
+	{
+        printf("Found %d I2C device(s).\n", found);
+    }
 }
