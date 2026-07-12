@@ -30,5 +30,7 @@ void MyI2C_Ack(void);
 void MyI2C_NAck(void);
 void MyI2C_Send_Byte(uint8_t data);
 uint8_t MyI2C_Read_Byte(uint8_t ack);
+uint8_t MyI2C_Write_Byte(uint8_t dev_addr, uint8_t reg_addr, uint8_t data);
+uint8_t MyI2C_Read_Byte_From_Reg(uint8_t dev_addr, uint8_t reg_addr, uint8_t *data);
 
 #endif
