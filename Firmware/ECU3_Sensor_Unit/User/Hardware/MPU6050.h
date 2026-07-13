@@ -36,6 +36,8 @@ typedef struct
     float yaw;          // 航向角 (度)
 } MPU6050_Data;
 
+//函数声明
+void MPU6050_Read_RawData(void);
 
 
 // 外部变量声明
