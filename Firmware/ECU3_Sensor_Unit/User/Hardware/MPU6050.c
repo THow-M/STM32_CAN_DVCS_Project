@@ -80,7 +80,7 @@ uint8_t MPU6050_Init(void)
     }
     
     // 校准传感器
-    //MPU6050_Calibrate();
+    MPU6050_Calibrate();
     
     printf("MPU6050 initialized successfully\n");
     return 1;
@@ -124,4 +124,82 @@ void MPU6050_Read_RawData(void)
 	{
         printf("MPU6050: Failed to read data\n");
     }
+}
+
+/** 函  数：传感器校准
+  * 参  数：无
+  * 返回值：无
+  */
+void MPU6050_Calibrate(void)
+{
+    printf("MPU6050: Starting calibration...\n");
+    printf("Please keep sensor stable and level...\n");
+    
+    int32_t accel_sum_x = 0, accel_sum_y = 0, accel_sum_z = 0;
+    int32_t gyro_sum_x = 0, gyro_sum_y = 0, gyro_sum_z = 0;
+    uint16_t sample_count = 200;
+    
+    for(uint16_t i = 0; i < sample_count; i++)
+	{
+        MPU6050_Read_RawData();
+        
+        accel_sum_x += mpu6050_data.accel_x;
+        accel_sum_y += mpu6050_data.accel_y;
+        accel_sum_z += mpu6050_data.accel_z;
+        
+        gyro_sum_x += mpu6050_data.gyro_x;
+        gyro_sum_y += mpu6050_data.gyro_y;
+        gyro_sum_z += mpu6050_data.gyro_z;
+        
+        Delay_ms(10);
+        
+        if(i % 50 == 0)
+		{
+            printf("Calibrating... %d%%\n", (i * 100) / sample_count);
+        }
+    }
+    
+    // 计算平均值
+    mpu6050_data.accel_offset_x = accel_sum_x / sample_count;
+    mpu6050_data.accel_offset_y = accel_sum_y / sample_count;
+    mpu6050_data.accel_offset_z = (accel_sum_z / sample_count) - 4096;  // 减去1g
+    
+    mpu6050_data.gyro_offset_x = gyro_sum_x / sample_count;
+    mpu6050_data.gyro_offset_y = gyro_sum_y / sample_count;
+    mpu6050_data.gyro_offset_z = gyro_sum_z / sample_count;
+    
+    printf("Calibration completed:\n");
+    printf("Accel Offset: X=%d, Y=%d, Z=%d\n", 
+           mpu6050_data.accel_offset_x, 
+           mpu6050_data.accel_offset_y, 
+           mpu6050_data.accel_offset_z);
+    printf("Gyro Offset: X=%d, Y=%d, Z=%d\n", 
+           mpu6050_data.gyro_offset_x, 
+           mpu6050_data.gyro_offset_y, 
+           mpu6050_data.gyro_offset_z);
+}
+
+/** 函  数：应用校准数据
+  * 参  数：无
+  * 返回值：无
+  */
+void MPU6050_Apply_Calibration(void)
+{
+    mpu6050_data.accel_x -= mpu6050_data.accel_offset_x;
+    mpu6050_data.accel_y -= mpu6050_data.accel_offset_y;
+    mpu6050_data.accel_z -= mpu6050_data.accel_offset_z;
+    
+    mpu6050_data.gyro_x -= mpu6050_data.gyro_offset_x;
+    mpu6050_data.gyro_y -= mpu6050_data.gyro_offset_y;
+    mpu6050_data.gyro_z -= mpu6050_data.gyro_offset_z;
+    
+    // 重新计算g单位
+    mpu6050_data.accel_x_g = mpu6050_data.accel_x / 4096.0f;
+    mpu6050_data.accel_y_g = mpu6050_data.accel_y / 4096.0f;
+    mpu6050_data.accel_z_g = mpu6050_data.accel_z / 4096.0f;
+    
+    // 重新计算dps单位
+    mpu6050_data.gyro_x_dps = mpu6050_data.gyro_x / 16.4f;
+    mpu6050_data.gyro_y_dps = mpu6050_data.gyro_y / 16.4f;
+    mpu6050_data.gyro_z_dps = mpu6050_data.gyro_z / 16.4f;
 }

@@ -38,7 +38,8 @@ typedef struct
 
 //函数声明
 void MPU6050_Read_RawData(void);
-
+void MPU6050_Calibrate(void);
+void MPU6050_Apply_Calibration(void);
 
 // 外部变量声明
 extern MPU6050_Data mpu6050_data;
