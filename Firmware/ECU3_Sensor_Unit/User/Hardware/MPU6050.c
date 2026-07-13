@@ -305,3 +305,12 @@ void MPU6050_Calculate_Attitude(float dt)
     
     last_time = HAL_GetTick();
 }
+
+/** 函  数：获取MPU6050数据
+  * 参  数：无
+  * 返回值：mpu6050_data MPU6050数据结构体
+  */
+MPU6050_Data MPU6050_GetData(void)
+{
+    return mpu6050_data;
+}
