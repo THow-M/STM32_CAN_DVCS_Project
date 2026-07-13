@@ -40,6 +40,8 @@ typedef struct
 void MPU6050_Read_RawData(void);
 void MPU6050_Calibrate(void);
 void MPU6050_Apply_Calibration(void);
+void MPU6050_Calculate_Attitude(float dt);
+
 
 // 外部变量声明
 extern MPU6050_Data mpu6050_data;

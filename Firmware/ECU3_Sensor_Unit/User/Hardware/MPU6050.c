@@ -4,6 +4,7 @@
 #include "MyI2C.h"
 #include "Serial.h"
 #include "Delay.h"
+#include <math.h>
 
 // MPU6050地址
 #define MPU6050_ADDR    0xD0  // 0x68左移一位
@@ -202,4 +203,105 @@ void MPU6050_Apply_Calibration(void)
     mpu6050_data.gyro_x_dps = mpu6050_data.gyro_x / 16.4f;
     mpu6050_data.gyro_y_dps = mpu6050_data.gyro_y / 16.4f;
     mpu6050_data.gyro_z_dps = mpu6050_data.gyro_z / 16.4f;
+}
+
+/** 函  数：互补滤波姿态解算
+  * 参  数：dt  采样周期(秒)，需与实际调用频率一致
+  *           例如10ms定时器调用则传入0.01f，5ms则传入0.005f
+  * 返回值：无
+  * 注  释：融合MPU6050的加速度计和陀螺仪数据，通过四元数计算
+  *         三轴姿态角(roll/pitch/yaw)，结果存入mpu6050_data结构体
+  *         算法：Mahony互补滤波 + 一阶欧拉四元数更新
+  *         Kp=0.1(比例增益), Ki=0.01(积分增益)
+  *         首次调用时仅记录时间戳并返回，不进行计算
+  */
+void MPU6050_Calculate_Attitude(float dt)
+{
+    static uint32_t last_time = 0;
+    float norm;
+    float vx, vy, vz;
+    float ex, ey, ez;
+    float halfT = dt / 2.0f;
+    
+    if(last_time == 0)
+	{
+        last_time = HAL_GetTick();
+        return;
+    }
+    
+    // 读取原始数据
+    MPU6050_Read_RawData();
+    
+    // 应用校准
+    MPU6050_Apply_Calibration();
+    
+    // 归一化加速度计数据
+    norm = sqrt(mpu6050_data.accel_x_g * mpu6050_data.accel_x_g + 
+                mpu6050_data.accel_y_g * mpu6050_data.accel_y_g + 
+                mpu6050_data.accel_z_g * mpu6050_data.accel_z_g);
+    
+    if(norm > 0.001f)
+	{
+        mpu6050_data.accel_x_g /= norm;
+        mpu6050_data.accel_y_g /= norm;
+        mpu6050_data.accel_z_g /= norm;
+    }
+    
+    // 估计重力的方向
+    vx = 2 * (q1 * q3 - q0 * q2);
+    vy = 2 * (q0 * q1 + q2 * q3);
+    vz = q0 * q0 - q1 * q1 - q2 * q2 + q3 * q3;
+    
+    // 计算误差
+    ex = (mpu6050_data.accel_y_g * vz - mpu6050_data.accel_z_g * vy);
+    ey = (mpu6050_data.accel_z_g * vx - mpu6050_data.accel_x_g * vz);
+    ez = (mpu6050_data.accel_x_g * vy - mpu6050_data.accel_y_g * vx);
+    
+    // 积分误差
+    exInt += ex * 0.5f * dt;
+    eyInt += ey * 0.5f * dt;
+    ezInt += ez * 0.5f * dt;
+    
+    // 修正陀螺仪数据
+    mpu6050_data.gyro_x_dps += 0.1f * ex + 0.01f * exInt;
+    mpu6050_data.gyro_y_dps += 0.1f * ey + 0.01f * eyInt;
+    mpu6050_data.gyro_z_dps += 0.1f * ez + 0.01f * ezInt;
+    
+    // 转换为弧度/秒
+    float gx = mpu6050_data.gyro_x_dps * 0.0174533f;  // 度/秒 -> 弧度/秒
+    float gy = mpu6050_data.gyro_y_dps * 0.0174533f;
+    float gz = mpu6050_data.gyro_z_dps * 0.0174533f;
+    
+    // 四元数微分方程
+    float q0t = (-q1 * gx - q2 * gy - q3 * gz) * halfT;
+    float q1t = ( q0 * gx + q2 * gz - q3 * gy) * halfT;
+    float q2t = ( q0 * gy - q1 * gz + q3 * gx) * halfT;
+    float q3t = ( q0 * gz + q1 * gy - q2 * gx) * halfT;
+    
+    // 更新四元数
+    q0 += q0t;
+    q1 += q1t;
+    q2 += q2t;
+    q3 += q3t;
+    
+    // 归一化四元数
+    norm = sqrt(q0 * q0 + q1 * q1 + q2 * q2 + q3 * q3);
+    if(norm > 0.001f)
+	{
+        q0 /= norm;
+        q1 /= norm;
+        q2 /= norm;
+        q3 /= norm;
+    }
+    
+    // 计算欧拉角
+    mpu6050_data.roll = atan2(2 * (q0 * q1 + q2 * q3), 1 - 2 * (q1 * q1 + q2 * q2)) * 57.2958f;  // 弧度 -> 度
+    mpu6050_data.pitch = asin(2 * (q0 * q2 - q3 * q1)) * 57.2958f;
+    mpu6050_data.yaw = atan2(2 * (q0 * q3 + q1 * q2), 1 - 2 * (q2 * q2 + q3 * q3)) * 57.2958f;
+    
+    // 保持yaw在0-360度
+    if(mpu6050_data.yaw < 0) mpu6050_data.yaw += 360.0f;
+    if(mpu6050_data.yaw > 360.0f) mpu6050_data.yaw -= 360.0f;
+    
+    last_time = HAL_GetTick();
 }
