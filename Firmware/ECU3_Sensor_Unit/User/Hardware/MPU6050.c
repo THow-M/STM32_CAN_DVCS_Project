@@ -343,3 +343,52 @@ void MPU6050_Temperature_Compensation(void)
     mpu6050_data.gyro_y *= temp_factor;
     mpu6050_data.gyro_z *= temp_factor;
 }
+
+/** 函  数：自检
+  * 参  数：无
+  * 返回值：result：0，自检失败或未通过，1，自检通过
+  */
+uint8_t MPU6050_Self_Test(void)
+{
+    uint8_t data[4];
+    uint8_t result = 0;
+    
+    printf("MPU6050 Self Test...\n");
+    
+    // 读取自检寄存器
+    if(MyI2C_Read_Bytes(MPU6050_ADDR, 0x0D, 4, data) == 0)
+	{
+        uint8_t accel_x_test = (data[0] >> 3) | ((data[3] & 0x30) >> 4);
+        uint8_t accel_y_test = (data[1] >> 3) | ((data[3] & 0x0C) >> 2);
+        uint8_t accel_z_test = (data[2] >> 3) | (data[3] & 0x03);
+        uint8_t gyro_x_test = data[0] & 0x1F;
+        uint8_t gyro_y_test = data[1] & 0x1F;
+        uint8_t gyro_z_test = data[2] & 0x1F;
+        
+        printf("Self Test Results:\n");
+        printf("Accel X: %d (should be 0-24)\n", accel_x_test);
+        printf("Accel Y: %d (should be 0-24)\n", accel_y_test);
+        printf("Accel Z: %d (should be 0-24)\n", accel_z_test);
+        printf("Gyro X:  %d (should be 0-24)\n", gyro_x_test);
+        printf("Gyro Y:  %d (should be 0-24)\n", gyro_y_test);
+        printf("Gyro Z:  %d (should be 0-24)\n", gyro_z_test);
+        
+        // 检查是否在正常范围内
+        if(accel_x_test < 25 && accel_y_test < 25 && accel_z_test < 25 &&
+           gyro_x_test < 25 && gyro_y_test < 25 && gyro_z_test < 25)
+		{
+            result = 1;
+            printf("Self Test PASSED\n");
+        }
+		else
+		{
+            printf("Self Test FAILED\n");
+        }
+    }
+	else
+	{
+        printf("Failed to read self-test registers\n");
+    }
+    
+    return result;
+}
