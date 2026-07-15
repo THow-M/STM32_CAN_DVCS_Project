@@ -7,10 +7,14 @@
 #include "LED.h"
 #include "Serial.h"
 #include "MyCAN.h"
+#include "MPU6050.h"
 
 int main(void) 
 {
     Timer_Init();
+	Serial_Init(115200);
+	MPU6050_Init();
+	MPU6050_Self_Test();
 
     while(1) 
 	{

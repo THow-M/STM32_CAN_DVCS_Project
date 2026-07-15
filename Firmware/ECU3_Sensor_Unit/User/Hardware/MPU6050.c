@@ -31,22 +31,22 @@ uint8_t MPU6050_Init(void)
     // 检查设备ID
     if(MyI2C_Read_Byte_From_Reg(MPU6050_ADDR, WHO_AM_I, &check))
 	{
-        printf("MPU6050: Failed to read WHO_AM_I register\n");
+        printf("MPU6050: Failed to read WHO_AM_I register\r\n");
         return 0;
     }
     
-    if(check != 0x68)
+    if(check != 0x70)
 	{
-        printf("MPU6050: Wrong device ID: 0x%02X (expected 0x68)\n", check);
+        printf("MPU6050: Wrong device ID: 0x%02X (expected 0x68)\r\n", check);
         return 0;
     }
     
-    printf("MPU6050 detected. ID: 0x%02X\n", check);
+    printf("MPU6050 detected. ID: 0x%02X\r\n", check);
     
     // 唤醒MPU6050
     if(MyI2C_Write_Byte(MPU6050_ADDR, PWR_MGMT_1, 0x00))
 	{
-        printf("MPU6050: Failed to wake up\n");
+        printf("MPU6050: Failed to wake up\r\n");
         return 0;
     }
     
@@ -55,35 +55,35 @@ uint8_t MPU6050_Init(void)
     // 设置采样率
     if(MyI2C_Write_Byte(MPU6050_ADDR, SMPLRT_DIV, 0x07))
 	{  // 1kHz/(7+1)=125Hz
-        printf("MPU6050: Failed to set sample rate\n");
+        printf("MPU6050: Failed to set sample rate\r\n");
         return 0;
     }
     
     // 设置低通滤波器
     if(MyI2C_Write_Byte(MPU6050_ADDR, CONFIG, 0x06))
 	{  // 5Hz
-        printf("MPU6050: Failed to set low-pass filter\n");
+        printf("MPU6050: Failed to set low-pass filter\r\n");
         return 0;
     }
     
     // 设置陀螺仪量程
     if(MyI2C_Write_Byte(MPU6050_ADDR, GYRO_CONFIG, 0x18))
 	{  // ±2000°/s
-        printf("MPU6050: Failed to set gyro range\n");
+        printf("MPU6050: Failed to set gyro range\r\n");
         return 0;
     }
     
     // 设置加速度计量程
     if(MyI2C_Write_Byte(MPU6050_ADDR, ACCEL_CONFIG, 0x10))
 	{  // ±8g
-        printf("MPU6050: Failed to set accelerometer range\n");
+        printf("MPU6050: Failed to set accelerometer range\r\n");
         return 0;
     }
     
     // 校准传感器
     MPU6050_Calibrate();
     
-    printf("MPU6050 initialized successfully\n");
+    printf("MPU6050 initialized successfully\r\n");
     return 1;
 }
 
@@ -123,7 +123,7 @@ void MPU6050_Read_RawData(void)
     }
 	else
 	{
-        printf("MPU6050: Failed to read data\n");
+        printf("MPU6050: Failed to read data\r\n");
     }
 }
 
@@ -133,8 +133,8 @@ void MPU6050_Read_RawData(void)
   */
 void MPU6050_Calibrate(void)
 {
-    printf("MPU6050: Starting calibration...\n");
-    printf("Please keep sensor stable and level...\n");
+    printf("MPU6050: Starting calibration...\r\n");
+    printf("Please keep sensor stable and level...\r\n");
     
     int32_t accel_sum_x = 0, accel_sum_y = 0, accel_sum_z = 0;
     int32_t gyro_sum_x = 0, gyro_sum_y = 0, gyro_sum_z = 0;
@@ -156,7 +156,7 @@ void MPU6050_Calibrate(void)
         
         if(i % 50 == 0)
 		{
-            printf("Calibrating... %d%%\n", (i * 100) / sample_count);
+            printf("Calibrating... %d%%\r\n", (i * 100) / sample_count);
         }
     }
     
@@ -169,12 +169,12 @@ void MPU6050_Calibrate(void)
     mpu6050_data.gyro_offset_y = gyro_sum_y / sample_count;
     mpu6050_data.gyro_offset_z = gyro_sum_z / sample_count;
     
-    printf("Calibration completed:\n");
-    printf("Accel Offset: X=%d, Y=%d, Z=%d\n", 
+    printf("Calibration completed:\r\n");
+    printf("Accel Offset: X=%d, Y=%d, Z=%d\r\n", 
            mpu6050_data.accel_offset_x, 
            mpu6050_data.accel_offset_y, 
            mpu6050_data.accel_offset_z);
-    printf("Gyro Offset: X=%d, Y=%d, Z=%d\n", 
+    printf("Gyro Offset: X=%d, Y=%d, Z=%d\r\n", 
            mpu6050_data.gyro_offset_x, 
            mpu6050_data.gyro_offset_y, 
            mpu6050_data.gyro_offset_z);
@@ -353,41 +353,44 @@ uint8_t MPU6050_Self_Test(void)
     uint8_t data[4];
     uint8_t result = 0;
     
-    printf("MPU6050 Self Test...\n");
+    printf("MPU6050 Self Test...\r\n");
     
     // 读取自检寄存器
     if(MyI2C_Read_Bytes(MPU6050_ADDR, 0x0D, 4, data) == 0)
 	{
-        uint8_t accel_x_test = (data[0] >> 3) | ((data[3] & 0x30) >> 4);
-        uint8_t accel_y_test = (data[1] >> 3) | ((data[3] & 0x0C) >> 2);
-        uint8_t accel_z_test = (data[2] >> 3) | (data[3] & 0x03);
-        uint8_t gyro_x_test = data[0] & 0x1F;
-        uint8_t gyro_y_test = data[1] & 0x1F;
-        uint8_t gyro_z_test = data[2] & 0x1F;
-        
-        printf("Self Test Results:\n");
-        printf("Accel X: %d (should be 0-24)\n", accel_x_test);
-        printf("Accel Y: %d (should be 0-24)\n", accel_y_test);
-        printf("Accel Z: %d (should be 0-24)\n", accel_z_test);
-        printf("Gyro X:  %d (should be 0-24)\n", gyro_x_test);
-        printf("Gyro Y:  %d (should be 0-24)\n", gyro_y_test);
-        printf("Gyro Z:  %d (should be 0-24)\n", gyro_z_test);
-        
-        // 检查是否在正常范围内
-        if(accel_x_test < 25 && accel_y_test < 25 && accel_z_test < 25 &&
-           gyro_x_test < 25 && gyro_y_test < 25 && gyro_z_test < 25)
+		/* 陀螺仪自检值：5位，在 data[0~2] 的高5位 [7:3] */
+		uint8_t gyro_x_test = data[0] >> 3;
+		uint8_t gyro_y_test = data[1] >> 3;
+		uint8_t gyro_z_test = data[2] >> 3;
+	
+		/* 加速度计自检值：4位，低3位在 data[0~2] 的 [2:0]，高1~2位在 data[3] */
+		uint8_t accel_x_test = (data[0] & 0x07) | ((data[3] & 0x20) >> 2);
+		uint8_t accel_y_test = (data[1] & 0x07) | ((data[3] & 0x10) >> 1);
+		uint8_t accel_z_test = (data[2] & 0x07) | (data[3] & 0x0C);
+
+		printf("Self Test Results:\r\n");
+		printf("Accel X: %d (0-15)\r\n", accel_x_test);
+		printf("Accel Y: %d (0-15)\r\n", accel_y_test);
+		printf("Accel Z: %d (0-15)\r\n", accel_z_test);
+		printf("Gyro X:  %d (0-24)\r\n", gyro_x_test);
+		printf("Gyro Y:  %d (0-24)\r\n", gyro_y_test);
+		printf("Gyro Z:  %d (0-24)\r\n", gyro_z_test);
+
+		/* 陀螺仪 5位最大31，出厂值通常 0~24；加速度计 4位最大15 */
+		if(accel_x_test <= 15 && accel_y_test <= 15 && accel_z_test <= 15 &&
+		gyro_x_test  <= 24 && gyro_y_test  <= 24 && gyro_z_test  <= 24)
 		{
-            result = 1;
-            printf("Self Test PASSED\n");
-        }
+			result = 1;
+			printf("Self Test PASSED\r\n");
+		}
 		else
 		{
-            printf("Self Test FAILED\n");
-        }
-    }
+			printf("Self Test FAILED\r\n");
+		}
+	}
 	else
 	{
-        printf("Failed to read self-test registers\n");
+        printf("Failed to read self-test registers\r\n");
     }
     
     return result;

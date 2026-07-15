@@ -33,7 +33,7 @@ void MyI2C_Init(void)
     // 初始状态：SCL和SDA都为高电平
     GPIO_SetBits(I2C_PORT, I2C_SCL_PIN | I2C_SDA_PIN);
     
-    printf("I2C initialized (Software)\n");
+    printf("I2C initialized (Software)\r\n");
 }
 
 /** 函  数：产生起始信号
@@ -393,7 +393,7 @@ void MyI2C_Scan_Devices(void)
     uint8_t i, ret;
     uint8_t found = 0;
     
-    printf("Scanning I2C bus...\n");
+    printf("Scanning I2C bus...\r\n");
     
     for(i = 1; i < 128; i++)
 	{
@@ -404,17 +404,17 @@ void MyI2C_Scan_Devices(void)
         
         if(ret == 0)
 		{
-            printf("Found device at address: 0x%02X\n", i);
+            printf("Found device at address: 0x%02X\r\n", i);
             found++;
         }
     }
     
     if(found == 0)
 	{
-        printf("No I2C devices found.\n");
+        printf("No I2C devices found.\r\n");
     }
 	else
 	{
-        printf("Found %d I2C device(s).\n", found);
+        printf("Found %d I2C device(s).\r\n", found);
     }
 }

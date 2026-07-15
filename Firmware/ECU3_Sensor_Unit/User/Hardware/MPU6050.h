@@ -37,6 +37,7 @@ typedef struct
 } MPU6050_Data;
 
 //函数声明
+uint8_t MPU6050_Init(void);
 void MPU6050_Read_RawData(void);
 void MPU6050_Calibrate(void);
 void MPU6050_Apply_Calibration(void);
