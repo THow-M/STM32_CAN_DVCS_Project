@@ -42,6 +42,7 @@ void MPU6050_Calibrate(void);
 void MPU6050_Apply_Calibration(void);
 void MPU6050_Calculate_Attitude(float dt);
 MPU6050_Data MPU6050_GetData(void);
+void MPU6050_Temperature_Compensation(void);
 
 
 // 外部变量声明

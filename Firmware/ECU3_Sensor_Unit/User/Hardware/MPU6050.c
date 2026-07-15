@@ -314,3 +314,32 @@ MPU6050_Data MPU6050_GetData(void)
 {
     return mpu6050_data;
 }
+
+/** 函  数：温度补偿
+  * 参  数：无
+  * 返回值：mpu6050_data MPU6050数据结构体
+  */
+void MPU6050_Temperature_Compensation(void)
+{
+    // 简单的温度补偿
+    static float avg_temp = 25.0f;
+    static uint8_t first_run = 1;
+    
+    if(first_run)
+	{
+        avg_temp = mpu6050_data.temperature_c;
+        first_run = 0;
+    }
+	else
+	{
+        // 低通滤波
+        avg_temp = 0.9f * avg_temp + 0.1f * mpu6050_data.temperature_c;
+    }
+    
+    // 温度变化对陀螺仪的影响
+    float temp_factor = 1.0f + (avg_temp - 25.0f) * 0.001f;  // 0.1%/°C
+    
+    mpu6050_data.gyro_x *= temp_factor;
+    mpu6050_data.gyro_y *= temp_factor;
+    mpu6050_data.gyro_z *= temp_factor;
+}
