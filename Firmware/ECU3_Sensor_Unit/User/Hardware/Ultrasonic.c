@@ -86,7 +86,7 @@ void Ultrasonic_Init(void)
     ultrasonic_data.valid = 1;
     ultrasonic_data.signal_strength = 100;
     
-    printf("Ultrasonic initialized\n");
+    printf("Ultrasonic initialized\r\n");
 }
 
 /** 函  数：发送触发信号
@@ -122,4 +122,33 @@ void Ultrasonic_Trigger(void)
 uint16_t Ultrasonic_GetDistance(void)
 {
     return ultrasonic_data.distance_mm;
+}
+
+/** 函  数：更新超声波数据
+  * 参  数：无
+  * 返回值：无
+  */
+void Ultrasonic_Update(void)
+{
+    static uint32_t last_measure_time = 0;
+    uint32_t current_time = HAL_GetTick();
+    
+    // 每100ms测量一次
+    if(current_time - last_measure_time >= 100)
+	{
+        last_measure_time = current_time;
+        
+        if(ultrasonic_data.valid)
+		{
+            Ultrasonic_Trigger();
+        }
+    }
+    
+    // 处理超时
+    if(measurement_state && current_time - last_measure_time > 50)
+	{  // 50ms超时
+        measurement_state = 0;
+        ultrasonic_data.valid = 0;
+        printf("Ultrasonic timeout\r\n");
+    }
 }

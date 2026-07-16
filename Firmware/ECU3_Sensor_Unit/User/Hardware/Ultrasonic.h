@@ -13,5 +13,7 @@ typedef struct
 //函数声明
 void Ultrasonic_Trigger(void);
 uint16_t Ultrasonic_GetDistance(void);
+void Ultrasonic_Update(void);
+
 
 #endif
