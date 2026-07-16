@@ -152,3 +152,46 @@ void Ultrasonic_Update(void)
         printf("Ultrasonic timeout\r\n");
     }
 }
+
+/** 函  数：计算距离
+  * 参  数：无
+  * 返回值：无
+  */
+void Ultrasonic_Calculate_Distance(void)
+{
+    uint32_t pulse_width;
+    
+    if(echo_start_time == 0 || echo_end_time == 0 || echo_end_time <= echo_start_time)
+	{
+        ultrasonic_data.valid = 0;
+        return;
+    }
+    
+    // 计算高电平时间（us）
+    pulse_width = echo_end_time - echo_start_time;
+    
+    // 检查是否在有效范围内
+    if(pulse_width < 116 || pulse_width > 23200)
+	{  // 2cm-400cm
+        ultrasonic_data.valid = 0;
+        return;
+    }
+    
+    // 计算距离
+    // 声速: 340m/s = 0.034cm/us
+    // 距离 = 时间 * 声速 / 2 (往返时间)
+    ultrasonic_data.distance_mm = (uint16_t)(pulse_width * 0.017f);  // 单位: mm
+    
+    // 转换为cm
+    ultrasonic_data.distance_cm = ultrasonic_data.distance_mm / 10.0f;
+    
+    // 信号强度（基于脉冲宽度）
+    if(pulse_width > 23200) pulse_width = 23200;  // 最大400cm
+    ultrasonic_data.signal_strength = 100 - (pulse_width * 100 / 23200);
+    
+    ultrasonic_data.valid = 1;
+    
+    printf("Distance: %dmm (%.1fcm)\r\n", 
+           ultrasonic_data.distance_mm, 
+           ultrasonic_data.distance_cm);
+}
