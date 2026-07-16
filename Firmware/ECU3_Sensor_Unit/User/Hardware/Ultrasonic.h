@@ -11,6 +11,6 @@ typedef struct
 } Ultrasonic_Data;
 
 //函数声明
-
+void Ultrasonic_Trigger(void);
 
 #endif

@@ -88,3 +88,29 @@ void Ultrasonic_Init(void)
     
     printf("Ultrasonic initialized\n");
 }
+
+/** 函  数：发送触发信号
+  * 参  数：无
+  * 返回值：无
+  */
+void Ultrasonic_Trigger(void)
+{
+    // 确保Echo为低电平
+    GPIO_ResetBits(TRIG_PORT, TRIG_PIN);
+    Delay_us(2);
+    
+    // 发送10us的高电平触发脉冲
+    GPIO_SetBits(TRIG_PORT, TRIG_PIN);
+    Delay_us(10);
+    GPIO_ResetBits(TRIG_PORT, TRIG_PIN);
+    
+    // 重置状态
+    echo_received = 0;
+    measurement_state = 1;
+    timeout_counter = 0;
+    
+    // 重置定时器
+    TIM_SetCounter(US_TIM, 0);
+    echo_start_time = 0;
+    echo_end_time = 0;
+}
