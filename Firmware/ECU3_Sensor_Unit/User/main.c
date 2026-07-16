@@ -8,6 +8,7 @@
 #include "Serial.h"
 #include "MyCAN.h"
 #include "MPU6050.h"
+#include "Ultrasonic.h"
 
 int main(void) 
 {
