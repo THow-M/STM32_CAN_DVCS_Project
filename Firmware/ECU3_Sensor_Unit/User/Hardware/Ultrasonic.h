@@ -16,5 +16,6 @@ uint16_t Ultrasonic_GetDistance(void);
 void Ultrasonic_Update(void);
 void Ultrasonic_Calculate_Distance(void);
 void Ultrasonic_Calibrate(void);
+void Ultrasonic_Diagnostic(void);
 
 #endif

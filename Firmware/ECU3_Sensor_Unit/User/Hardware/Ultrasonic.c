@@ -235,3 +235,20 @@ void Ultrasonic_Calibrate(void)
         printf("No valid samples received\r\n");
     }
 }
+
+/** 函  数：超声波诊断
+  * 参  数：无
+  * 返回值：无
+  */
+void Ultrasonic_Diagnostic(void)
+{
+    printf("=== Ultrasonic Diagnostic ===\r\n");
+    printf("Distance: %dmm (%.1fcm)\r\n", 
+           ultrasonic_data.distance_mm, 
+           ultrasonic_data.distance_cm);
+    printf("Valid: %s\r\n", ultrasonic_data.valid ? "Yes" : "No");
+    printf("Signal Strength: %d%%\r\n", ultrasonic_data.signal_strength);
+    printf("Echo Start: %lu us\r\n", echo_start_time);
+    printf("Echo End: %lu us\r\n", echo_end_time);
+    printf("============================\r\n");
+}
