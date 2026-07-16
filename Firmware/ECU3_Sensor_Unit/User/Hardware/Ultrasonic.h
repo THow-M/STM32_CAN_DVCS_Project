@@ -11,11 +11,15 @@ typedef struct
 } Ultrasonic_Data;
 
 //函数声明
+void Ultrasonic_Init(void);
 void Ultrasonic_Trigger(void);
 uint16_t Ultrasonic_GetDistance(void);
 void Ultrasonic_Update(void);
 void Ultrasonic_Calculate_Distance(void);
 void Ultrasonic_Calibrate(void);
 void Ultrasonic_Diagnostic(void);
+void Ultrasonic_Test_All(void);
+// 外部变量声明
+extern Ultrasonic_Data ultrasonic_data;
 
 #endif

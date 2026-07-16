@@ -10,16 +10,20 @@
 #include "MPU6050.h"
 #include "Ultrasonic.h"
 
+
+
 int main(void) 
 {
     Timer_Init();
 	Serial_Init(115200);
-	MPU6050_Init();
-	MPU6050_Self_Test();
+	Ultrasonic_Test_All();
+	
 
     while(1) 
 	{
+		Ultrasonic_Update();
         
+		
     }
 }
 

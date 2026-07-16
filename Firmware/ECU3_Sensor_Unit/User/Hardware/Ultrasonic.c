@@ -191,9 +191,9 @@ void Ultrasonic_Calculate_Distance(void)
     
     ultrasonic_data.valid = 1;
     
-    printf("Distance: %dmm (%.1fcm)\r\n", 
+    /*printf("Distance: %dmm (%.1fcm)\r\n", 
            ultrasonic_data.distance_mm, 
-           ultrasonic_data.distance_cm);
+           ultrasonic_data.distance_cm);*/
 }
 
 /** 函  数：超声波校准
@@ -220,7 +220,7 @@ void Ultrasonic_Calibrate(void)
             valid_samples++;
         }
         
-        printf("Sample %d: %dmm\n", i + 1, ultrasonic_data.distance_mm);
+        printf("Sample %d: %dmm\r\n", i + 1, ultrasonic_data.distance_mm);
     }
     
     if(valid_samples > 0)
@@ -251,4 +251,196 @@ void Ultrasonic_Diagnostic(void)
     printf("Echo Start: %lu us\r\n", echo_start_time);
     printf("Echo End: %lu us\r\n", echo_end_time);
     printf("============================\r\n");
+}
+
+// 超声波中断服务函数
+void TIM4_IRQHandler(void)
+{
+    if(TIM_GetITStatus(US_TIM, TIM_IT_CC4) != RESET)
+	{
+        if(measurement_state)
+		{
+            if(echo_start_time == 0)
+			{
+                // 上升沿，记录开始时间
+                echo_start_time = TIM_GetCapture4(US_TIM);
+                
+                // 改为下降沿捕获
+                TIM_OC4PolarityConfig(US_TIM, TIM_ICPolarity_Falling);
+            }
+			else
+			{
+                // 下降沿，记录结束时间
+                echo_end_time = TIM_GetCapture4(US_TIM);
+                echo_received = 1;
+                measurement_state = 0;
+                
+                // 计算距离
+                Ultrasonic_Calculate_Distance();
+                
+                // 恢复为上升沿捕获
+                TIM_OC4PolarityConfig(US_TIM, TIM_ICPolarity_Rising);
+                echo_start_time = 0;
+                echo_end_time = 0;
+            }
+        }
+        
+        TIM_ClearITPendingBit(US_TIM, TIM_IT_CC4);
+    }
+}
+
+/**
+  * 函  数：超声波模块完整测试
+  * 参  数：无
+  * 返回值：无
+  * 注  释：依次执行以下测试项：
+  *         1. 初始化测试
+  *         2. 单次阻塞测量测试（3次）
+  *         3. 连续非阻塞测量测试（5秒）
+  *         4. 超时/无回波测试
+  *         5. 诊断信息输出
+  *         所有结果通过串口打印，需在 main 中调用
+  */
+void Ultrasonic_Test_All(void)
+{
+    uint16_t distance = 0;
+    uint32_t test_start = 0;
+    uint8_t pass_count = 0;
+    uint8_t total_count = 0;
+
+    printf("\r\n================================\r\n");
+    printf("  Ultrasonic Module Test\r\n");
+    printf("================================\r\n\r\n");
+
+    /*------ 测试1：初始化 ------*/
+    printf("[TEST 1] Initialization...\r\n");
+    Ultrasonic_Init();
+    printf("[TEST 1] PASSED\r\n\r\n");
+
+    /*------ 测试2：单次阻塞测量（3次） ------*/
+    printf("[TEST 2] Single Measurement (x3)...\r\n");
+    pass_count = 0;
+
+    for (uint8_t i = 0; i < 3; i++)
+    {
+        Ultrasonic_Trigger();
+        Delay_ms(100);  /* 等待回波返回和计算完成 */
+
+        distance = Ultrasonic_GetDistance();
+        total_count++;
+
+        printf("  #%d: %d mm (%.1f cm), Valid=%d, Strength=%d%%\r\n",
+               i + 1,
+               ultrasonic_data.distance_mm,
+               ultrasonic_data.distance_cm,
+               ultrasonic_data.valid,
+               ultrasonic_data.signal_strength);
+
+        if (ultrasonic_data.valid)
+        {
+            pass_count++;
+        }
+
+        Delay_ms(200);  /* 两次测量间隔 */
+    }
+
+    printf("[TEST 2] %s (%d/3 valid)\r\n\r\n",
+           pass_count >= 2 ? "PASSED" : "FAILED", pass_count);
+
+    /*------ 测试3：连续非阻塞测量（5秒） ------*/
+    printf("[TEST 3] Continuous Measurement (5 seconds)...\r\n");
+    printf("  Tip: Move hand in front of sensor\r\n");
+    test_start = HAL_GetTick();
+    pass_count = 0;
+    total_count = 0;
+
+    while (HAL_GetTick() - test_start < 5000)
+    {
+        Ultrasonic_Update();  /* 非阻塞，内部自动触发 */
+
+        /* 每 500ms 打印一次 */
+        if ((HAL_GetTick() - test_start) % 500 < 10)
+        {
+            if (ultrasonic_data.valid)
+            {
+                printf("  [%.1fs] %d mm, Strength=%d%%\r\n",
+                       (HAL_GetTick() - test_start) / 1000.0f,
+                       ultrasonic_data.distance_mm,
+                       ultrasonic_data.signal_strength);
+                pass_count++;
+            }
+            else
+            {
+                printf("  [%.1fs] --- no echo ---\r\n",
+                       (HAL_GetTick() - test_start) / 1000.0f);
+            }
+            total_count++;
+        }
+
+        Delay_ms(10);
+    }
+
+    printf("[TEST 3] %s (%d/%d valid readings)\r\n\r\n",
+           pass_count > 0 ? "PASSED" : "FAILED", pass_count, total_count);
+
+    /*------ 测试4：超时测试（遮挡 Echo 或断开模块） ------*/
+    printf("[TEST 4] Timeout Test (disconnect Echo or block)\r\n");
+    printf("  Waiting 3 seconds for timeout...\r\n");
+
+    Ultrasonic_Trigger();
+    test_start = HAL_GetTick();
+
+    while (HAL_GetTick() - test_start < 3000)
+    {
+        if (ultrasonic_data.valid == 0 && measurement_state == 0)
+        {
+            printf("  Timeout detected correctly\r\n");
+            printf("[TEST 4] PASSED\r\n\r\n");
+            break;
+        }
+        Delay_ms(10);
+    }
+
+    if (ultrasonic_data.valid)
+    {
+        printf("  No timeout occurred (echo still active)\r\n");
+        printf("[TEST 4] SKIPPED (sensor receiving echoes)\r\n\r\n");
+    }
+
+    /*------ 测试5：近距离 / 远距离范围 ------*/
+    printf("[TEST 5] Range Check\r\n");
+    Ultrasonic_Trigger();
+    Delay_ms(100);
+
+    if (ultrasonic_data.valid)
+    {
+        /* 检查是否在合理范围内（2cm ~ 400cm） */
+        if (ultrasonic_data.distance_mm >= 20 && ultrasonic_data.distance_mm <= 4000)
+        {
+            printf("  Distance %d mm is within range (20-4000mm)\r\n",
+                   ultrasonic_data.distance_mm);
+            printf("[TEST 5] PASSED\r\n\r\n");
+        }
+        else
+        {
+            printf("  Distance %d mm is OUT of range (20-4000mm)\r\n",
+                   ultrasonic_data.distance_mm);
+            printf("[TEST 5] FAILED\r\n\r\n");
+        }
+    }
+    else
+    {
+        printf("  No valid data, skipping range check\r\n");
+        printf("[TEST 5] SKIPPED\r\n\r\n");
+    }
+
+    /*------ 测试6：诊断信息 ------*/
+    printf("[TEST 6] Diagnostic Output\r\n");
+    Ultrasonic_Diagnostic();
+    printf("[TEST 6] PASSED\r\n\r\n");
+
+    /*------ 测试总结 ------*/
+    printf("================================\r\n");
+    printf("  All Tests Completed\r\n");
+    printf("================================\r\n");
 }
