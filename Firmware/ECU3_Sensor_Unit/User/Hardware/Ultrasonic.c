@@ -195,3 +195,43 @@ void Ultrasonic_Calculate_Distance(void)
            ultrasonic_data.distance_mm, 
            ultrasonic_data.distance_cm);
 }
+
+/** 函  数：超声波校准
+  * 参  数：无
+  * 返回值：无
+  */
+void Ultrasonic_Calibrate(void)
+{
+    printf("Ultrasonic calibration started...\r\n");
+    printf("Please place object at known distance (e.g., 100mm)\r\n");
+    
+    uint32_t sum = 0;
+    uint16_t samples = 20;
+    uint16_t valid_samples = 0;
+    
+    for(uint16_t i = 0; i < samples; i++)
+	{
+        Ultrasonic_Trigger();
+        Delay_ms(100);
+        
+        if(ultrasonic_data.valid)
+		{
+            sum += ultrasonic_data.distance_mm;
+            valid_samples++;
+        }
+        
+        printf("Sample %d: %dmm\n", i + 1, ultrasonic_data.distance_mm);
+    }
+    
+    if(valid_samples > 0)
+	{
+        uint16_t avg_distance = sum / valid_samples;
+        printf("Average distance: %dmm\r\n", avg_distance);
+        printf("Expected distance: 100mm\r\n");
+        printf("Calibration factor: %.3f\r\n", 100.0f / avg_distance);
+    }
+	else
+	{
+        printf("No valid samples received\r\n");
+    }
+}
