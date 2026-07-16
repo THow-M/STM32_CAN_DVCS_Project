@@ -114,3 +114,12 @@ void Ultrasonic_Trigger(void)
     echo_start_time = 0;
     echo_end_time = 0;
 }
+
+/** 函  数：获取距离
+  * 参  数：无
+  * 返回值：distance_mm 测得的距离
+  */
+uint16_t Ultrasonic_GetDistance(void)
+{
+    return ultrasonic_data.distance_mm;
+}
