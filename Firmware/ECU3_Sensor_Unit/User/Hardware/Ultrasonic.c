@@ -24,7 +24,9 @@ static volatile uint32_t echo_start_time = 0;
 static volatile uint32_t echo_end_time = 0;
 static volatile uint8_t echo_received = 0;
 static volatile uint8_t measurement_state = 0;
+static volatile uint8_t echo_rising_captured = 0;   /* 上升沿已捕获标志 */
 static volatile uint32_t timeout_counter = 0;
+static volatile uint32_t last_timeout_log_time = 0;   /* 上次超时日志时间 */
 
 /** 函  数：超声波初始化
   * 参  数：无
@@ -37,54 +39,70 @@ void Ultrasonic_Init(void)
     TIM_ICInitTypeDef TIM_ICInitStructure;
     NVIC_InitTypeDef NVIC_InitStructure;
     
-    // 1. 开启时钟
-    RCC_APB2PeriphClockCmd(TRIG_CLK | ECHO_CLK, ENABLE);
-    RCC_APB1PeriphClockCmd(US_TIM_CLK, ENABLE);
+    /* 1. 开启时钟（必须先开时钟再配置） */
+    RCC_APB2PeriphClockCmd(RCC_APB2Periph_GPIOB | RCC_APB2Periph_AFIO, ENABLE);
+    RCC_APB1PeriphClockCmd(RCC_APB1Periph_TIM4, ENABLE);
     
-    // 2. 配置Trig引脚为推挽输出
-    GPIO_InitStructure.GPIO_Pin = TRIG_PIN;
+    /* 2. PB8 = Trig 推挽输出 */
+    GPIO_InitStructure.GPIO_Pin = GPIO_Pin_8;
     GPIO_InitStructure.GPIO_Mode = GPIO_Mode_Out_PP;
     GPIO_InitStructure.GPIO_Speed = GPIO_Speed_50MHz;
-    GPIO_Init(TRIG_PORT, &GPIO_InitStructure);
+    GPIO_Init(GPIOB, &GPIO_InitStructure);
+    GPIO_ResetBits(GPIOB, GPIO_Pin_8);     /* 初始低电平 */
     
-    // 3. 配置Echo引脚为浮空输入
-    GPIO_InitStructure.GPIO_Pin = ECHO_PIN;
+    /* 3. PB9 = Echo 浮空输入（TIM4_CH4 默认映射） */
+    GPIO_InitStructure.GPIO_Pin = GPIO_Pin_9;
     GPIO_InitStructure.GPIO_Mode = GPIO_Mode_IN_FLOATING;
-    GPIO_Init(ECHO_PORT, &GPIO_InitStructure);
+    GPIO_Init(GPIOB, &GPIO_InitStructure);
     
-    // 4. 初始化定时器4
-    // 定时器时钟=72MHz，预分频72，计数频率=1MHz，1个计数=1us
-    TIM_TimeBaseStructure.TIM_Period = 65535;
+    /* 4. TIM4 时基：72MHz / 72 = 1MHz, 周期 65535 = 65.5ms */
     TIM_TimeBaseStructure.TIM_Prescaler = 72 - 1;
+    TIM_TimeBaseStructure.TIM_Period = 65535;
     TIM_TimeBaseStructure.TIM_ClockDivision = TIM_CKD_DIV1;
     TIM_TimeBaseStructure.TIM_CounterMode = TIM_CounterMode_Up;
-    TIM_TimeBaseInit(US_TIM, &TIM_TimeBaseStructure);
+    TIM_TimeBaseStructure.TIM_RepetitionCounter = 0;
+    TIM_TimeBaseInit(TIM4, &TIM_TimeBaseStructure);
     
-    // 5. 配置输入捕获通道4
-    TIM_ICInitStructure.TIM_Channel = US_TIM_Channel;
-    TIM_ICInitStructure.TIM_ICPolarity = TIM_ICPolarity_Rising;  // 上升沿捕获
+    TIM_ClearFlag(TIM4, TIM_FLAG_Update);     //清更新标志
+    
+    /* 5. TIM4_CH4 输入捕获：上升沿，直连，不分频，不滤波 */
+    TIM_ICInitStructure.TIM_Channel = TIM_Channel_4;
+    TIM_ICInitStructure.TIM_ICPolarity = TIM_ICPolarity_Rising;
     TIM_ICInitStructure.TIM_ICSelection = TIM_ICSelection_DirectTI;
     TIM_ICInitStructure.TIM_ICPrescaler = TIM_ICPSC_DIV1;
-    TIM_ICInitStructure.TIM_ICFilter = 0x00;  // 不滤波
-    TIM_ICInit(US_TIM, &TIM_ICInitStructure);
+    TIM_ICInitStructure.TIM_ICFilter = 0x08;
+    TIM_ICInit(TIM4, &TIM_ICInitStructure);
     
-    // 6. 配置中断
-    TIM_ITConfig(US_TIM, TIM_IT_CC4, ENABLE);
+    /* 6. 开启 CC4 中断（注意：必须先清标志再开中断！） */
+    TIM_ClearITPendingBit(TIM4, TIM_IT_CC4);
+    TIM_ITConfig(TIM4, TIM_IT_CC4, ENABLE);
     
-    NVIC_InitStructure.NVIC_IRQChannel = US_TIM_IRQn;
-    NVIC_InitStructure.NVIC_IRQChannelPreemptionPriority = 0;
+    /* 7. NVIC 配置 */
+    NVIC_PriorityGroupConfig(NVIC_PriorityGroup_2);
+    NVIC_InitStructure.NVIC_IRQChannel = TIM4_IRQn;
+    NVIC_InitStructure.NVIC_IRQChannelPreemptionPriority = 1;
     NVIC_InitStructure.NVIC_IRQChannelSubPriority = 1;
     NVIC_InitStructure.NVIC_IRQChannelCmd = ENABLE;
     NVIC_Init(&NVIC_InitStructure);
     
-    // 7. 使能定时器
-    TIM_Cmd(US_TIM, ENABLE);
+    /* 8. 清零计数器，启动定时器 */
+    TIM_SetCounter(TIM4, 0);
+    TIM_Cmd(TIM4, ENABLE);
     
-    // 8. 初始化数据
+    /* 9. 初始化数据 */
     ultrasonic_data.distance_mm = 0;
     ultrasonic_data.distance_cm = 0.0f;
-    ultrasonic_data.valid = 1;
-    ultrasonic_data.signal_strength = 100;
+    ultrasonic_data.valid = 0;
+    ultrasonic_data.signal_strength = 0;
+    
+    /* 调试：打印寄存器值确认配置 */
+    /*printf("Ultrasonic Init OK\r\n");
+    printf("  TIM4 CR1: 0x%04X\r\n", TIM4->CR1);
+    printf("  TIM4 CCER: 0x%04X\r\n", TIM4->CCER);
+    printf("  TIM4 CCMR2: 0x%04X\r\n", TIM4->CCMR2);
+    printf("  TIM4 DIER: 0x%04X\r\n", TIM4->DIER);
+    printf("  GPIOB CRL: 0x%08X\r\n", GPIOB->CRL);
+    printf("  GPIOB CRH: 0x%08X\r\n", GPIOB->CRH);*/
     
     printf("Ultrasonic initialized\r\n");
 }
@@ -95,24 +113,32 @@ void Ultrasonic_Init(void)
   */
 void Ultrasonic_Trigger(void)
 {
-    // 确保Echo为低电平
-    GPIO_ResetBits(TRIG_PORT, TRIG_PIN);
-    Delay_us(2);
+    /* 1. 关 CC4 中断 */
+    TIM_ITConfig(TIM4, TIM_IT_CC4, DISABLE);
     
-    // 发送10us的高电平触发脉冲
-    GPIO_SetBits(TRIG_PORT, TRIG_PIN);
-    Delay_us(10);
-    GPIO_ResetBits(TRIG_PORT, TRIG_PIN);
-    
-    // 重置状态
+    /* 2. 重置状态机 */
     echo_received = 0;
-    measurement_state = 1;
-    timeout_counter = 0;
-    
-    // 重置定时器
-    TIM_SetCounter(US_TIM, 0);
     echo_start_time = 0;
     echo_end_time = 0;
+    echo_rising_captured = 0;
+    measurement_state = 1;
+    
+    /* 3. 强制配置为上升沿捕获 */
+    TIM_OC4PolarityConfig(TIM4, TIM_ICPolarity_Rising);
+    
+    /* 4. 清零计数器 + 清 CC4 标志 */
+    TIM_SetCounter(TIM4, 0);
+    TIM_ClearITPendingBit(TIM4, TIM_IT_CC4);
+    
+    /* 5. 开中断 */
+    TIM_ITConfig(TIM4, TIM_IT_CC4, ENABLE);
+    
+    /* 6. 发 20us Trig 脉冲（HC-SR04 要求 >=10us） */
+    GPIO_ResetBits(GPIOB, GPIO_Pin_8);
+    Delay_us(5);
+    GPIO_SetBits(GPIOB, GPIO_Pin_8);
+    Delay_us(20);
+    GPIO_ResetBits(GPIOB, GPIO_Pin_8);
 }
 
 /** 函  数：获取距离
@@ -131,26 +157,33 @@ uint16_t Ultrasonic_GetDistance(void)
 void Ultrasonic_Update(void)
 {
     static uint32_t last_measure_time = 0;
+	static uint32_t trigger_time = 0;
     uint32_t current_time = HAL_GetTick();
     
     // 每100ms测量一次
-    if(current_time - last_measure_time >= 100)
+    if(current_time - last_measure_time >= 150)
 	{
-        last_measure_time = current_time;
-        
-        if(ultrasonic_data.valid)
-		{
+        if(measurement_state == 0)        /* 新增：测量进行中不触发新测量 */
+        {
+            last_measure_time = current_time;
+            trigger_time = current_time;
             Ultrasonic_Trigger();
         }
+        /* 若 measurement_state != 0，不更新 last_measure_time，等待当前测量完成 */
     }
     
     // 处理超时
-    if(measurement_state && current_time - last_measure_time > 50)
-	{  // 50ms超时
+    if(measurement_state && current_time - trigger_time > 100)
+    {
         measurement_state = 0;
         ultrasonic_data.valid = 0;
-        printf("Ultrasonic timeout\r\n");
-    }
+        /* 限频：每1000ms最多打印一次 */
+        if(current_time - last_timeout_log_time >= 1000)
+        {
+            last_timeout_log_time = current_time;
+            printf("Ultrasonic timeout\r\n");
+        }
+	}
 }
 
 /** 函  数：计算距离
@@ -161,8 +194,8 @@ void Ultrasonic_Calculate_Distance(void)
 {
     uint32_t pulse_width;
     
-    if(echo_start_time == 0 || echo_end_time == 0 || echo_end_time <= echo_start_time)
-	{
+    if(echo_rising_captured != 0 || echo_end_time == 0 || echo_end_time <= echo_start_time)
+    {
         ultrasonic_data.valid = 0;
         return;
     }
@@ -180,13 +213,12 @@ void Ultrasonic_Calculate_Distance(void)
     // 计算距离
     // 声速: 340m/s = 0.034cm/us
     // 距离 = 时间 * 声速 / 2 (往返时间)
-    ultrasonic_data.distance_mm = (uint16_t)(pulse_width * 0.017f);  // 单位: mm
+    ultrasonic_data.distance_mm = (uint16_t)(pulse_width * 0.17f);  // 单位: mm
     
     // 转换为cm
     ultrasonic_data.distance_cm = ultrasonic_data.distance_mm / 10.0f;
     
     // 信号强度（基于脉冲宽度）
-    if(pulse_width > 23200) pulse_width = 23200;  // 最大400cm
     ultrasonic_data.signal_strength = 100 - (pulse_width * 100 / 23200);
     
     ultrasonic_data.valid = 1;
@@ -260,10 +292,11 @@ void TIM4_IRQHandler(void)
 	{
         if(measurement_state)
 		{
-            if(echo_start_time == 0)
+            if(echo_rising_captured  == 0)
 			{
                 // 上升沿，记录开始时间
                 echo_start_time = TIM_GetCapture4(US_TIM);
+				echo_rising_captured = 1;   /* 新增：置位上升沿捕获标志 */
                 
                 // 改为下降沿捕获
                 TIM_OC4PolarityConfig(US_TIM, TIM_ICPolarity_Falling);
@@ -274,14 +307,15 @@ void TIM4_IRQHandler(void)
                 echo_end_time = TIM_GetCapture4(US_TIM);
                 echo_received = 1;
                 measurement_state = 0;
+				echo_rising_captured = 0;   /* 新增：清零上升沿捕获标志 */
                 
                 // 计算距离
                 Ultrasonic_Calculate_Distance();
                 
                 // 恢复为上升沿捕获
                 TIM_OC4PolarityConfig(US_TIM, TIM_ICPolarity_Rising);
-                echo_start_time = 0;
-                echo_end_time = 0;
+                //echo_start_time = 0;
+                //echo_end_time = 0;
             }
         }
         
@@ -303,7 +337,6 @@ void TIM4_IRQHandler(void)
   */
 void Ultrasonic_Test_All(void)
 {
-    uint16_t distance = 0;
     uint32_t test_start = 0;
     uint8_t pass_count = 0;
     uint8_t total_count = 0;
@@ -316,6 +349,10 @@ void Ultrasonic_Test_All(void)
     printf("[TEST 1] Initialization...\r\n");
     Ultrasonic_Init();
     printf("[TEST 1] PASSED\r\n\r\n");
+	
+	printf("TIM4 CNT after 1ms: %lu\r\n", TIM_GetCounter(TIM4));
+	Delay_ms(1);
+	printf("TIM4 CNT after 2ms: %lu\r\n", TIM_GetCounter(TIM4));
 
     /*------ 测试2：单次阻塞测量（3次） ------*/
     printf("[TEST 2] Single Measurement (x3)...\r\n");
@@ -326,7 +363,6 @@ void Ultrasonic_Test_All(void)
         Ultrasonic_Trigger();
         Delay_ms(100);  /* 等待回波返回和计算完成 */
 
-        distance = Ultrasonic_GetDistance();
         total_count++;
 
         printf("  #%d: %d mm (%.1f cm), Valid=%d, Strength=%d%%\r\n",
@@ -351,33 +387,37 @@ void Ultrasonic_Test_All(void)
     printf("[TEST 3] Continuous Measurement (5 seconds)...\r\n");
     printf("  Tip: Move hand in front of sensor\r\n");
     test_start = HAL_GetTick();
-    pass_count = 0;
-    total_count = 0;
-
-    while (HAL_GetTick() - test_start < 5000)
     {
-        Ultrasonic_Update();  /* 非阻塞，内部自动触发 */
+        uint32_t last_print_time = test_start;   /* 新增：绝对时间比较 */
+        pass_count = 0;
+        total_count = 0;
 
-        /* 每 500ms 打印一次 */
-        if ((HAL_GetTick() - test_start) % 500 < 10)
+        while (HAL_GetTick() - test_start < 5000)
         {
-            if (ultrasonic_data.valid)
-            {
-                printf("  [%.1fs] %d mm, Strength=%d%%\r\n",
-                       (HAL_GetTick() - test_start) / 1000.0f,
-                       ultrasonic_data.distance_mm,
-                       ultrasonic_data.signal_strength);
-                pass_count++;
-            }
-            else
-            {
-                printf("  [%.1fs] --- no echo ---\r\n",
-                       (HAL_GetTick() - test_start) / 1000.0f);
-            }
-            total_count++;
-        }
+            Ultrasonic_Update();  /* 非阻塞，内部自动触发 */
 
-        Delay_ms(10);
+            /* 每 500ms 打印一次，用绝对时间比较替代取模窗口 */
+            if (HAL_GetTick() - last_print_time >= 500)
+            {
+                last_print_time = HAL_GetTick();
+                if (ultrasonic_data.valid)
+                {
+                    printf("  [%.1fs] %d mm, Strength=%d%%\r\n",
+                           (HAL_GetTick() - test_start) / 1000.0f,
+                           ultrasonic_data.distance_mm,
+                           ultrasonic_data.signal_strength);
+                    pass_count++;
+                }
+                else
+                {
+                    printf("  [%.1fs] --- no echo ---\r\n",
+                           (HAL_GetTick() - test_start) / 1000.0f);
+                }
+                total_count++;
+            }
+
+            Delay_ms(10);
+        }
     }
 
     printf("[TEST 3] %s (%d/%d valid readings)\r\n\r\n",
@@ -392,11 +432,25 @@ void Ultrasonic_Test_All(void)
 
     while (HAL_GetTick() - test_start < 3000)
     {
-        if (ultrasonic_data.valid == 0 && measurement_state == 0)
+        /* 内联超时检测逻辑 */
         {
-            printf("  Timeout detected correctly\r\n");
-            printf("[TEST 4] PASSED\r\n\r\n");
-            break;
+            static uint32_t last_check = 0;
+            uint32_t now = HAL_GetTick();
+            if(now - last_check >= 1)   /* 1ms粒度检查 */
+            {
+                last_check = now;
+                if (measurement_state == 0 && ultrasonic_data.valid == 0)
+                {
+                    printf("  Timeout detected correctly\r\n");
+                    printf("[TEST 4] PASSED\r\n\r\n");
+                    break;
+                }
+                if(now - test_start > 50)   /* 50ms超时阈值 */
+                {
+                    measurement_state = 0;
+                    ultrasonic_data.valid = 0;
+                }
+            }
         }
         Delay_ms(10);
     }
