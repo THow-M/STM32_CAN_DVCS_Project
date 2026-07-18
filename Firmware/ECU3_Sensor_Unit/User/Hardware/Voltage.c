@@ -214,3 +214,28 @@ void Voltage_Calibrate(float actual_voltage)
     // 保存校准因子到EEPROM（这里只是打印）
     printf("Calibration factor saved: %.3f\r\n", calibration_factor);
 }
+
+/** 函  数：电压诊断
+  * 参  数：无
+  * 返回值：无
+  */
+void Voltage_Diagnostic(void)
+{
+    printf("=== Voltage Diagnostic ===\r\n");
+    printf("Current Voltage: %.2fV (%dmV)\r\n", 
+           voltage_data.voltage_v, 
+           voltage_data.voltage_mv);
+    printf("Filtered Voltage: %.2fV\r\n", voltage_data.filtered_v);
+    printf("Battery: %d%%\r\n", voltage_data.battery_percent);
+    printf("Status: ");
+    switch(voltage_data.status)
+	{
+        case VOLTAGE_LOW: printf("LOW\r\n"); break;
+        case VOLTAGE_NORMAL: printf("NORMAL\r\n"); break;
+        case VOLTAGE_HIGH: printf("HIGH\r\n"); break;
+    }
+    printf("ADC Value: %d\r\n", Voltage_Read_ADC());
+    printf("ADC Reference: %.2fV\r\n", ADC_REF_VOLTAGE);
+    printf("Divider Ratio: %.1f\r\n", VOLTAGE_DIVIDER_RATIO);
+    printf("=======================\r\n");
+}
