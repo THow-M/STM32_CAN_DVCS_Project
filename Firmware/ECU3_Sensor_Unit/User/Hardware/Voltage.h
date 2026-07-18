@@ -69,6 +69,7 @@ void Voltage_Update(void);
 Voltage_Data Voltage_GetData(void);
 void Voltage_Calibrate(float actual_voltage);
 void Voltage_Diagnostic(void);
+void Voltage_Test_All(void);
 
 // 外部变量声明
 extern Voltage_Data voltage_data;

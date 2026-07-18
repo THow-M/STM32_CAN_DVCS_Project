@@ -8,18 +8,19 @@
 #include "MyCAN.h"
 #include "MPU6050.h"
 #include "Ultrasonic.h"
-
+#include "Voltage.h"
 
 
 int main(void) 
 {
     Timer_Init();
 	Serial_Init(115200);
-	Ultrasonic_Test_All();
+	Voltage_Init();
+	Voltage_Test_All();
 	
     while(1) 
 	{
-		Ultrasonic_Update();
+		Voltage_Update();
         
 		
     }

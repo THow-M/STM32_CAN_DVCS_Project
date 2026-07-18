@@ -21,6 +21,8 @@ Voltage_Data voltage_data = {0};
 static uint16_t adc_samples[ADC_SAMPLE_COUNT] = {0};
 static uint8_t sample_index = 0;
 
+static float voltage_calibration_factor = VOLTAGE_DIVIDER_RATIO;
+
 /** 函  数：ADC初始化
   * 参  数：无
   * 返回值：无
@@ -201,22 +203,22 @@ Voltage_Data Voltage_GetData(void)
   */
 void Voltage_Calibrate(float actual_voltage)
 {
-    static float calibration_factor = VOLTAGE_DIVIDER_RATIO;
+    //static float voltage_calibration_factor = VOLTAGE_DIVIDER_RATIO;
     
     // 读取当前ADC值
     uint16_t adc_value = Voltage_Read_ADC();
     
     // 计算校准因子
     float measured_voltage = adc_value * ADC_REF_VOLTAGE / ADC_RESOLUTION;
-    calibration_factor = actual_voltage / measured_voltage;
+    voltage_calibration_factor = actual_voltage / measured_voltage;
     
     printf("Voltage calibration:\r\n");
     printf("Actual voltage: %.2fV\r\n", actual_voltage);
     printf("Measured ADC: %d (%.3fV)\r\n", adc_value, measured_voltage);
-    printf("Calibration factor: %.3f\r\n", calibration_factor);
+    printf("Calibration factor: %.3f\r\n", voltage_calibration_factor);
     
     // 保存校准因子到EEPROM（这里只是打印）
-    printf("Calibration factor saved: %.3f\r\n", calibration_factor);
+    printf("Calibration factor saved: %.3f\r\n", voltage_calibration_factor);
 }
 
 /** 函  数：电压诊断
@@ -242,4 +244,213 @@ void Voltage_Diagnostic(void)
     printf("ADC Reference: %.2fV\r\n", ADC_REF_VOLTAGE);
     printf("Divider Ratio: %.1f\r\n", VOLTAGE_DIVIDER_RATIO);
     printf("=======================\r\n");
+}
+
+/** 函  数: 电压模块全部测试
+  * 参  数: 无
+  * 返回值: 无
+  * 说  明: 依次执行 6 项测试, 通过串口打印结果
+  */
+void Voltage_Test_All(void)
+{
+    printf("\r\n");
+    printf("====================================\r\n");
+    printf("  Voltage Module Self Test\r\n");
+    printf("====================================\r\n\r\n");
+    
+    /* 测试 1: 初始化测试 */
+    printf("[TEST 1] Initialization Test...\r\n");
+    {
+        uint8_t pass = 1;
+        
+        /* 检查 ADC1 是否已经被使能 */
+        if((ADC1->CR2 & ADC_CR2_ADON) == 0)
+        {
+            printf("  FAIL: ADC1 not enabled\r\n");
+            pass = 0;
+        }
+        else
+        {
+            printf("  ADC1 enabled: OK\r\n");
+        }
+        
+        /* 检查 PA1 是否为模拟输入 (CRL 位 4-7 = 0000) */
+        if((GPIOA->CRL & GPIO_CRL_MODE1) != 0 || (GPIOA->CRL & GPIO_CRL_CNF1) != 0)
+        {
+            printf("  FAIL: PA1 not in analog mode\r\n");
+            pass = 0;
+        }
+        else
+        {
+            printf("  PA1 analog mode: OK\r\n");
+        }
+        
+        /* 读取一次 ADC, 确认转换能完成 */
+        {
+            uint16_t adc_val = Voltage_Read_ADC();
+            if(adc_val > 0 && adc_val < 4096)
+            {
+                printf("  ADC conversion: OK (%d)\r\n", adc_val);
+            }
+            else
+            {
+                printf("  FAIL: ADC value out of range (%d)\r\n", adc_val);
+                pass = 0;
+            }
+        }
+        
+        if(pass)
+            printf("[TEST 1] PASSED\r\n\r\n");
+        else
+            printf("[TEST 1] FAILED\r\n\r\n");
+    }
+    
+    /* 测试 2: 单次电压测量 (x3) */
+    printf("[TEST 2] Single Measurement (x3)...\r\n");
+    {
+        uint8_t valid_count = 0;
+        
+        for(uint8_t i = 0; i < 3; i++)
+        {
+            uint16_t adc_val = Voltage_Read_ADC();
+            float adc_voltage = adc_val * ADC_REF_VOLTAGE / ADC_RESOLUTION;
+            float actual_voltage = adc_voltage * voltage_calibration_factor;
+            
+            /* 有效性判断: ADC > 0 且 实际电压在 0-20V 之间 */
+            uint8_t valid = (adc_val > 0) && (actual_voltage > 0.0f) && (actual_voltage < 20.0f);
+            
+            printf("  #%d: %.2f V  (ADC=%d, valid=%s)\r\n",
+                   i+1, actual_voltage, adc_val, valid ? "Yes" : "No");
+            
+            if(valid) valid_count++;
+            Delay_ms(200);
+        }
+        
+        if(valid_count == 3)
+            printf("[TEST 2] PASSED (3/3 valid)\r\n\r\n");
+        else
+            printf("[TEST 2] FAILED (%d/3 valid)\r\n\r\n", valid_count);
+    }
+    
+    /* 测试 3: 连续非阻塞测量 (5 秒) */
+    printf("[TEST 3] Continuous Measurement (5 seconds)...\r\n");
+    printf("  Tip: Vary the input voltage to see changes\r\n");
+    {
+        uint32_t test_start = HAL_GetTick();
+        uint32_t last_print_time = test_start;
+        uint16_t valid_count = 0;
+        uint16_t total_count = 0;
+        
+        /* 先填充采样数组, 避免首次全 0 */
+        {
+            uint16_t init_val = Voltage_Read_ADC();
+            for(uint8_t i = 0; i < ADC_SAMPLE_COUNT; i++)
+                adc_samples[i] = init_val;
+        }
+        
+        while(HAL_GetTick() - test_start < 5000)
+        {
+            Voltage_Update();
+            
+            /* 每 500ms 打印一次 */
+            if(HAL_GetTick() - last_print_time >= 500)
+            {
+                last_print_time = HAL_GetTick();
+                total_count++;
+                
+                if(voltage_data.status == VOLTAGE_NORMAL)
+                {
+                    printf("  [%.1fs] %.2f V  %d%%  Status=NORMAL\r\n",
+                           (HAL_GetTick() - test_start) / 1000.0f,
+                           voltage_data.voltage_v,
+                           voltage_data.battery_percent);
+                    valid_count++;
+                }
+                else if(voltage_data.status == VOLTAGE_LOW)
+                {
+                    printf("  [%.1fs] %.2f V  Status=LOW\r\n",
+                           (HAL_GetTick() - test_start) / 1000.0f,
+                           voltage_data.voltage_v);
+                    valid_count++;
+                }
+                else if(voltage_data.status == VOLTAGE_HIGH)
+                {
+                    printf("  [%.1fs] %.2f V  Status=HIGH\r\n",
+                           (HAL_GetTick() - test_start) / 1000.0f,
+                           voltage_data.voltage_v);
+                    valid_count++;
+                }
+                else
+                {
+                    printf("  [%.1fs] --- no data ---\r\n",
+                           (HAL_GetTick() - test_start) / 1000.0f);
+                }
+            }
+            
+            Delay_ms(10);
+        }
+        
+        if(valid_count >= 7)
+            printf("[TEST 3] PASSED (%d/%d valid readings)\r\n\r\n", valid_count, total_count);
+        else
+            printf("[TEST 3] FAILED (%d/%d valid readings)\r\n\r\n", valid_count, total_count);
+    }
+    
+    /* 测试 4: 电压范围检查 */
+    printf("[TEST 4] Range Check\r\n");
+    {
+        float v = voltage_data.voltage_v;
+        
+        printf("  Current voltage: %.2f V\r\n", v);
+        printf("  Valid range: %.1f - %.1f V\r\n", VOLTAGE_MIN, VOLTAGE_MAX);
+        
+        if(v > 0.0f && v < 20.0f)
+        {
+            printf("  Voltage within ADC range (0-20V): YES\r\n");
+            
+            if(v >= VOLTAGE_MIN && v <= VOLTAGE_MAX)
+                printf("  Battery range (%.1f-%.1fV): YES (%.0f%%)\r\n",
+                       VOLTAGE_MIN, VOLTAGE_MAX, voltage_data.battery_percent * 1.0f);
+            else if(v < VOLTAGE_MIN)
+                printf("  Battery range: BELOW MIN (undervoltage)\r\n");
+            else
+                printf("  Battery range: ABOVE MAX (overvoltage)\r\n");
+            
+            printf("[TEST 4] PASSED\r\n\r\n");
+        }
+        else
+        {
+            printf("  FAIL: Voltage out of reasonable range\r\n");
+            printf("[TEST 4] FAILED\r\n\r\n");
+        }
+    }
+    
+    /* 测试 5: 滤波效果验证 (对比原始值与滤波值) */
+    printf("[TEST 5] Filter Verification\r\n");
+    {
+        uint16_t raw_adc = Voltage_Read_ADC();
+        float raw_voltage = raw_adc * ADC_REF_VOLTAGE / ADC_RESOLUTION * voltage_calibration_factor;
+        float filtered_voltage = voltage_data.filtered_v;
+        float diff = (raw_voltage > filtered_voltage) ?
+                     (raw_voltage - filtered_voltage) : (filtered_voltage - raw_voltage);
+        
+        printf("  Raw voltage:      %.3f V\r\n", raw_voltage);
+        printf("  Filtered voltage: %.3f V\r\n", filtered_voltage);
+        printf("  Difference:       %.3f V (%.1f%%)\r\n",
+               diff, raw_voltage > 0 ? (diff / raw_voltage * 100.0f) : 0);
+        
+        if(diff < 1.0f)  /* 差值小于 1V 认为滤波正常工作 */
+            printf("[TEST 5] PASSED (filter working)\r\n\r\n");
+        else
+            printf("[TEST 5] WARNING (large difference, may need more samples)\r\n\r\n");
+    }
+    
+    /* 测试 6: 诊断输出 */
+    printf("[TEST 6] Diagnostic Output\r\n");
+    Voltage_Diagnostic();
+    printf("[TEST 6] PASSED\r\n\r\n");
+    
+    printf("====================================\r\n");
+    printf("  Voltage Test Complete\r\n");
+    printf("====================================\r\n\r\n");
 }
