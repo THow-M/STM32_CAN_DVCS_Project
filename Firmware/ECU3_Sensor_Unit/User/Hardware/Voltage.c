@@ -62,3 +62,16 @@ void Voltage_Init(void)
     
     printf("Voltage detection initialized\n");
 }
+
+// 读取ADC值
+uint16_t Voltage_Read_ADC(void)
+{
+    // 启动转换
+    ADC_SoftwareStartConvCmd(ADC1, ENABLE);
+    
+    // 等待转换完成
+    while(!ADC_GetFlagStatus(ADC1, ADC_FLAG_EOC));
+    
+    // 读取转换值
+    return ADC_GetConversionValue(ADC1);
+}

@@ -26,6 +26,7 @@ typedef struct
 
 // 函数声明
 void Voltage_Init(void);
+uint16_t Voltage_Read_ADC(void);
 
 
 // 外部变量声明
