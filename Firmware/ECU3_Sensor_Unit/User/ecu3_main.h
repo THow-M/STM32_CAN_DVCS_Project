@@ -1,6 +1,11 @@
 #ifndef __ECU3_MAIN_H
 #define __ECU3_MAIN_H
 
+//--------------------------系统常量-----------------------------
+#define NODE_NUM                  3         //ECU节点总数
+#define HEARTBEAT_TIMEOUT         3000      //心跳超时时间（ms）
+#define CAN_TIMEOUT               5000      // 超时定义5秒
+
 // 系统状态定义
 typedef enum
 {
@@ -29,15 +34,26 @@ typedef struct
     uint32_t timestamp;         // 时间戳 (ms)
 } Sensor_Fusion;
 
-// 错误代码定义
-#define ERROR_NONE              0x00
-#define ERROR_MPU6050_FAIL      0x01
-#define ERROR_MPU6050_SELFTEST  0x02
-#define ERROR_ULTRASONIC_FAIL   0x04
-#define ERROR_VOLTAGE_FAIL      0x08
-#define ERROR_VOLTAGE_LOW       0x10
-#define ERROR_CAN_COMM          0x20
-#define ERROR_SENSOR_FUSION     0x40
+/*
+ * 错误代码定义 (位掩码, 可用 | 组合, 用 & 判断)
+ * 修复: 用 #undef 覆盖 System_Config.h 中的顺序值定义
+ *       统一为位掩码风格, 便于 ECU3 做多错误组合判断
+ */
+#undef ERROR_NONE
+#define ERROR_NONE              0x00    // 无错误
+
+#define ERROR_MPU6050_FAIL      0x01    // ECU3 特有: MPU6050 通信失败
+#define ERROR_MPU6050_SELFTEST  0x02    // ECU3 特有: MPU6050 自检失败
+#define ERROR_ULTRASONIC_FAIL   0x04    // ECU3 特有: 超声波模块故障
+#define ERROR_VOLTAGE_FAIL      0x08    // ECU3 特有: 电压采集故障
+
+#undef ERROR_VOLTAGE_LOW
+#define ERROR_VOLTAGE_LOW       0x10    // 电压过低 (覆盖 System_Config.h 的 0x04)
+
+#undef ERROR_CAN_COMM
+#define ERROR_CAN_COMM          0x20    // CAN 通信故障 (覆盖 System_Config.h 的 0x01)
+
+#define ERROR_SENSOR_FUSION     0x40    // ECU3 特有: 传感器融合异常
 
 // 系统命令定义
 #define SYS_CMD_START        1
@@ -46,10 +62,6 @@ typedef struct
 #define SYS_CMD_CALIBRATE    4
 #define SYS_CMD_DIAGNOSTIC   5
 #define SYS_CMD_SELF_TEST    6
-
-// 超时定义
-#define HEARTBEAT_TIMEOUT    3000  // 3秒
-#define CAN_TIMEOUT          5000  // 5秒
 
 // 函数声明
 void System_Init(void);
