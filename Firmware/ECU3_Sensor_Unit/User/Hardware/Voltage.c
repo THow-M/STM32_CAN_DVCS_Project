@@ -33,12 +33,11 @@ void Voltage_Init(void)
     // 1. 开启时钟
     RCC_APB2PeriphClockCmd(ADC_CLK | ADC_ADC_CLK, ENABLE);
 	
-	//RCC_ADCCLKConfig(RCC_PCLK2_Div6);
+	RCC_ADCCLKConfig(RCC_PCLK2_Div6);
     
     // 2. 配置PA1为模拟输入
     GPIO_InitStructure.GPIO_Pin = ADC_PIN;
     GPIO_InitStructure.GPIO_Mode = GPIO_Mode_AIN;
-	GPIO_InitStructure.GPIO_Speed = GPIO_Speed_50MHz;
     GPIO_Init(ADC_PORT, &GPIO_InitStructure);
     
     // 3. ADC初始化(单次转换、非扫描）
@@ -89,6 +88,7 @@ uint16_t Voltage_Read_ADC(void)
 void Voltage_Update(void)
 {
     static uint32_t last_update_time = 0;
+	static uint32_t last_print_time = 0;
     uint32_t current_time = HAL_GetTick();
 	
 	// Voltage_Update 首次调用
@@ -175,10 +175,14 @@ void Voltage_Update(void)
 		}
         voltage_data.filtered_v = filtered_voltage;
         
-        printf("Voltage: %.2fV (%d%%) Status: %d\r\n", 
-               voltage_data.voltage_v, 
-               voltage_data.battery_percent,
-               voltage_data.status);
+        if(current_time - last_print_time >= 1000)
+        {
+            last_print_time = current_time;
+            printf("Voltage: %.2fV (%d%%) Status: %d\r\n", 
+                   voltage_data.voltage_v, 
+                   voltage_data.battery_percent,
+                   voltage_data.status);
+        }
     }
 }
 
