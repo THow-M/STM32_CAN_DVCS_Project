@@ -21,7 +21,10 @@ Voltage_Data voltage_data = {0};
 static uint16_t adc_samples[ADC_SAMPLE_COUNT] = {0};
 static uint8_t sample_index = 0;
 
-// ADC初始化
+/** 函  数：ADC初始化
+  * 参  数：无
+  * 返回值：无
+  */
 void Voltage_Init(void)
 {
     GPIO_InitTypeDef GPIO_InitStructure;
@@ -60,10 +63,13 @@ void Voltage_Init(void)
     ADC_StartCalibration(ADC1);
     while(ADC_GetCalibrationStatus(ADC1));
     
-    printf("Voltage detection initialized\n");
+    printf("Voltage detection initialized\r\n");
 }
 
-// 读取ADC值
+/** 函  数：读取ADC值
+  * 参  数：无
+  * 返回值：ADC转换值
+  */
 uint16_t Voltage_Read_ADC(void)
 {
     // 启动转换
@@ -74,4 +80,113 @@ uint16_t Voltage_Read_ADC(void)
     
     // 读取转换值
     return ADC_GetConversionValue(ADC1);
+}
+
+/** 函  数：更新电压数据
+  * 参  数：无
+  * 返回值：无
+  */
+void Voltage_Update(void)
+{
+    static uint32_t last_update_time = 0;
+    uint32_t current_time = HAL_GetTick();
+	
+	// Voltage_Update 首次调用
+	static uint8_t first_run = 1;
+	if(first_run)
+	{
+		uint16_t init_val = Voltage_Read_ADC();
+		for(uint8_t i = 0; i < ADC_SAMPLE_COUNT; i++)
+			adc_samples[i] = init_val;
+		sample_index = 0;
+		first_run = 0;
+	}
+    
+    // 每100ms更新一次
+    if(current_time - last_update_time >= 100)
+	{
+        last_update_time = current_time;
+        
+        // 读取ADC值
+        uint16_t adc_value = Voltage_Read_ADC();
+        
+        // 保存到采样数组
+        adc_samples[sample_index] = adc_value;
+        sample_index = (sample_index + 1) % ADC_SAMPLE_COUNT;
+        
+        // 计算平均值
+        uint32_t sum = 0;
+        for(uint8_t i = 0; i < ADC_SAMPLE_COUNT; i++)
+		{
+            sum += adc_samples[i];
+        }
+        uint16_t avg_adc = sum / ADC_SAMPLE_COUNT;
+        
+        // 计算电压
+        // 步骤1: ADC电压 = ADC值 * 3.3V / 4096
+        // 步骤2: 实际电压 = ADC电压 * 分压比
+        float adc_voltage = avg_adc * ADC_REF_VOLTAGE / ADC_RESOLUTION;
+        float actual_voltage = adc_voltage * VOLTAGE_DIVIDER_RATIO;
+        
+        // 转换为mV
+        voltage_data.voltage_mv = (uint16_t)(actual_voltage * 1000);
+        voltage_data.voltage_v = actual_voltage;
+        
+        // 检查电压状态
+        if(voltage_data.voltage_v < VOLTAGE_MIN)
+		{
+            voltage_data.status = VOLTAGE_LOW;
+        }
+		else if(voltage_data.voltage_v > VOLTAGE_MAX)
+		{
+            voltage_data.status = VOLTAGE_HIGH;
+        }
+		else
+		{
+            voltage_data.status = VOLTAGE_NORMAL;
+        }
+        
+        // 计算电量百分比（假设12V系统）
+        if(voltage_data.voltage_v <= 10.0f)
+		{
+            voltage_data.battery_percent = 0;
+        }
+		else if(voltage_data.voltage_v >= 12.6f)
+		{
+            voltage_data.battery_percent = 100;
+        }
+		else
+		{
+            // 10.0V-12.6V线性映射到0-100%
+            voltage_data.battery_percent = (uint8_t)((voltage_data.voltage_v - 10.0f) * 100 / 2.6f);
+        }
+        
+        // 滤波处理
+        static float filtered_voltage = 0;
+		static uint8_t filter_first = 1;
+		if(filter_first)
+		{
+			filtered_voltage = actual_voltage;
+			filter_first = 0;
+		}
+		else
+		{
+			filtered_voltage = 0.9f * filtered_voltage + 0.1f * actual_voltage;
+		}
+        voltage_data.filtered_v = filtered_voltage;
+        
+        printf("Voltage: %.2fV (%d%%) Status: %d\r\n", 
+               voltage_data.voltage_v, 
+               voltage_data.battery_percent,
+               voltage_data.status);
+    }
+}
+
+/** 函  数：获取电压数据
+  * 参  数：无
+  * 返回值：voltage_data 电压数据结构体
+  */
+Voltage_Data Voltage_GetData(void)
+{
+    return voltage_data;
 }
