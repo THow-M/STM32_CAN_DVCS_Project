@@ -29,6 +29,8 @@ void Voltage_Init(void);
 uint16_t Voltage_Read_ADC(void);
 void Voltage_Update(void);
 Voltage_Data Voltage_GetData(void);
+void Voltage_Calibrate(float actual_voltage);
+
 
 // 外部变量声明
 extern Voltage_Data voltage_data;

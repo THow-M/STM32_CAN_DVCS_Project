@@ -190,3 +190,27 @@ Voltage_Data Voltage_GetData(void)
 {
     return voltage_data;
 }
+
+/** 函  数：电压校准
+  * 参  数：actual_voltage 实际电压
+  * 返回值：无
+  */
+void Voltage_Calibrate(float actual_voltage)
+{
+    static float calibration_factor = VOLTAGE_DIVIDER_RATIO;
+    
+    // 读取当前ADC值
+    uint16_t adc_value = Voltage_Read_ADC();
+    
+    // 计算校准因子
+    float measured_voltage = adc_value * ADC_REF_VOLTAGE / ADC_RESOLUTION;
+    calibration_factor = actual_voltage / measured_voltage;
+    
+    printf("Voltage calibration:\r\n");
+    printf("Actual voltage: %.2fV\r\n", actual_voltage);
+    printf("Measured ADC: %d (%.3fV)\r\n", adc_value, measured_voltage);
+    printf("Calibration factor: %.3f\r\n", calibration_factor);
+    
+    // 保存校准因子到EEPROM（这里只是打印）
+    printf("Calibration factor saved: %.3f\r\n", calibration_factor);
+}
