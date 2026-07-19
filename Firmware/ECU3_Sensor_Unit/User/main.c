@@ -722,6 +722,8 @@ void System_Diagnostic(void)
     printf("===========================\r\n\r\n");
 }
 
+
+
 int main(void) 
 {
     System_Init();
@@ -730,6 +732,79 @@ int main(void)
 	{
         
 		
+    }
+}
+
+
+
+/** 函  数：错误处理
+  * 参  数：无
+  * 返回值：无
+  */
+void Error_Handler(void)
+{
+    static uint32_t error_start_time = 0;
+    uint32_t current_time = HAL_GetTick();
+    
+    if(error_start_time == 0)
+	{
+        error_start_time = current_time;
+        printf("Entering error state. Code: 0x%02X\r\n", error_code);
+    }
+    
+    // LED快速闪烁表示错误
+    static uint32_t last_blink = 0;
+    if(current_time - last_blink > 100)
+	{
+        last_blink = current_time;
+        static uint8_t led_state = 0;
+        led_state = !led_state;
+        
+        GPIO_WriteBit(GPIOB, GPIO_Pin_12, led_state ? Bit_SET : Bit_RESET);
+        GPIO_WriteBit(GPIOB, GPIO_Pin_13, led_state ? Bit_SET : Bit_RESET);
+        GPIO_WriteBit(GPIOB, GPIO_Pin_14, led_state ? Bit_SET : Bit_RESET);
+    }
+    
+    // 尝试自动恢复
+    if(current_time - error_start_time > 5000)
+	{  // 5秒后尝试恢复
+        printf("Attempting to recover from error...\r\n");
+        
+        // 尝试重新初始化传感器
+        if(error_code & ERROR_MPU6050_FAIL)
+		{
+            printf("Reinitializing MPU6050...\r\n");
+            if(MPU6050_Init())
+			{
+                error_code &= ~ERROR_MPU6050_FAIL;
+            }
+        }
+        
+        if(error_code & ERROR_ULTRASONIC_FAIL)
+		{
+            printf("Reinitializing Ultrasonic...\r\n");
+            Ultrasonic_Init();
+            error_code &= ~ERROR_ULTRASONIC_FAIL;
+        }
+        
+        if(error_code & ERROR_VOLTAGE_FAIL)
+		{
+            printf("Reinitializing Voltage detection...\r\n");
+            Voltage_Init();
+            error_code &= ~ERROR_VOLTAGE_FAIL;
+        }
+        
+        // 如果所有错误都清除，恢复系统
+        if(error_code == 0)
+		{
+            system_state = SYS_READY;
+            error_start_time = 0;
+            printf("Error recovery successful.\r\n");
+        }
+		else
+		{
+            printf("Some errors still present: 0x%02X\r\n", error_code);
+        }
     }
 }
 

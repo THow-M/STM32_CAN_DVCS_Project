@@ -42,10 +42,10 @@ typedef struct
 #undef ERROR_NONE
 #define ERROR_NONE              0x00    // 无错误
 
-#define ERROR_MPU6050_FAIL      0x01    // ECU3 特有: MPU6050 通信失败
-#define ERROR_MPU6050_SELFTEST  0x02    // ECU3 特有: MPU6050 自检失败
-#define ERROR_ULTRASONIC_FAIL   0x04    // ECU3 特有: 超声波模块故障
-#define ERROR_VOLTAGE_FAIL      0x08    // ECU3 特有: 电压采集故障
+#define ERROR_MPU6050_FAIL      0x01    // MPU6050 通信失败
+#define ERROR_MPU6050_SELFTEST  0x02    // MPU6050 自检失败
+#define ERROR_ULTRASONIC_FAIL   0x04    // 超声波模块故障
+#define ERROR_VOLTAGE_FAIL      0x08    // 电压采集故障
 
 #undef ERROR_VOLTAGE_LOW
 #define ERROR_VOLTAGE_LOW       0x10    // 电压过低 (覆盖 System_Config.h 的 0x04)
@@ -53,7 +53,7 @@ typedef struct
 #undef ERROR_CAN_COMM
 #define ERROR_CAN_COMM          0x20    // CAN 通信故障 (覆盖 System_Config.h 的 0x01)
 
-#define ERROR_SENSOR_FUSION     0x40    // ECU3 特有: 传感器融合异常
+#define ERROR_SENSOR_FUSION     0x40    // 传感器融合异常
 
 // 系统命令定义
 #define SYS_CMD_START        1
@@ -75,7 +75,7 @@ void Control_Loop(void);
 void Communication_Handler(void);
 void CAN_Data_Handler(uint32_t id, uint8_t len, uint8_t* data);
 void System_Diagnostic(void);
-
+void Error_Handler(void);
 
 // 外部变量声明
 extern System_State system_state;
