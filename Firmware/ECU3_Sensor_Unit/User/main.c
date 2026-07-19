@@ -248,7 +248,7 @@ void Sensor_Fusion_Process(void)
     Sensor_Anomaly_Detection();
     
     // 6. 数据滤波
-    //Sensor_Data_Filtering();
+    Sensor_Data_Filtering();
     
     last_fusion_time = current_time;
 }
@@ -311,6 +311,41 @@ void Sensor_Anomaly_Detection(void)
 	else
 	{
         LED3_OFF();
+    }
+}
+
+/** 函  数：数据滤波
+  * 参  数：无
+  * 返回值：无
+  */
+void Sensor_Data_Filtering(void)
+{
+    static float filtered_distance = 0;
+    static float filtered_roll = 0;
+    static float filtered_pitch = 0;
+    static float filtered_yaw = 0;
+    
+    if(filtered_distance == 0)
+	{
+        filtered_distance = sensor_fusion.distance_cm;
+        filtered_roll = sensor_fusion.roll;
+        filtered_pitch = sensor_fusion.pitch;
+        filtered_yaw = sensor_fusion.yaw;
+    }
+	else
+	{
+        // 低通滤波
+        float alpha = 0.7f;  // 滤波系数
+        
+        filtered_distance = alpha * filtered_distance + (1 - alpha) * sensor_fusion.distance_cm;
+        filtered_roll = alpha * filtered_roll + (1 - alpha) * sensor_fusion.roll;
+        filtered_pitch = alpha * filtered_pitch + (1 - alpha) * sensor_fusion.pitch;
+        filtered_yaw = alpha * filtered_yaw + (1 - alpha) * sensor_fusion.yaw;
+        
+        sensor_fusion.filtered_distance_cm = filtered_distance;
+        sensor_fusion.filtered_roll = filtered_roll;
+        sensor_fusion.filtered_pitch = filtered_pitch;
+        sensor_fusion.filtered_yaw = filtered_yaw;
     }
 }
 
