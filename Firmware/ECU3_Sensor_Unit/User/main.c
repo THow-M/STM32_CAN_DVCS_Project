@@ -349,6 +349,89 @@ void Sensor_Data_Filtering(void)
     }
 }
 
+/** 函  数：自动校准
+  * 参  数：无
+  * 返回值：无
+  */
+void Auto_Calibration(void)
+{
+    static uint32_t calibration_start = 0;
+    static uint8_t calibration_phase = 0;
+    
+    if(!calibration_complete)
+	{
+        if(calibration_start == 0)
+		{
+            calibration_start = HAL_GetTick();
+            printf("Starting auto-calibration...\r\n");
+            calibration_phase = 1;
+        }
+        
+        uint32_t current_time = HAL_GetTick();
+        
+        switch(calibration_phase)
+		{
+            case 1:  // MPU6050校准
+                if(current_time - calibration_start < 2000)
+				{  // 2秒
+                    LED1_ON();
+                    MPU6050_Calibrate();
+                }
+				else
+				{
+                    LED1_OFF();
+                    calibration_start = current_time;
+                    calibration_phase = 2;
+                    printf("MPU6050 calibration complete\r\n");
+                }
+                break;
+                
+            case 2:  // 超声波校准
+                if(current_time - calibration_start < 3000)
+				{  // 3秒
+                    LED2_ON();
+                    Ultrasonic_Calibrate();
+                }
+				else
+				{
+                    LED2_OFF();
+                    calibration_start = current_time;
+                    calibration_phase = 3;
+                    printf("Ultrasonic calibration complete\r\n");
+                }
+                break;
+                
+            case 3:  // 电压校准
+                if(current_time - calibration_start < 3000)
+				{  // 3秒
+                    LED3_ON();
+                    // 假设标准电压为12.0V
+                    Voltage_Calibrate(12.0f);
+                }
+				else
+				{
+                    LED3_OFF();
+                    calibration_complete = 1;
+                    printf("Auto-calibration completed\r\n");
+                    
+                    // 完成指示
+                    for(int i = 0; i < 5; i++)
+					{
+                        LED1_ON();
+						LED2_ON();
+						LED3_ON();
+                        Delay_ms(100);
+                        LED1_OFF();
+						LED2_OFF();
+						LED3_OFF();
+                        Delay_ms(100);
+                    }
+                }
+                break;
+        }
+    }
+}
+
 int main(void) 
 {
     System_Init();
