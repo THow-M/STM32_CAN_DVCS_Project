@@ -245,7 +245,7 @@ void Sensor_Fusion_Process(void)
     sensor_fusion.timestamp = current_time;
     
     // 5. 异常检测
-    //Sensor_Anomaly_Detection();
+    Sensor_Anomaly_Detection();
     
     // 6. 数据滤波
     //Sensor_Data_Filtering();
@@ -253,11 +253,66 @@ void Sensor_Fusion_Process(void)
     last_fusion_time = current_time;
 }
 
-/** 函  数：传感器融合处理
+/** 函  数：传感器异常检测
   * 参  数：无
   * 返回值：无
   */
-
+void Sensor_Anomaly_Detection(void)
+{
+    static uint8_t anomaly_count = 0;
+    uint8_t anomaly_detected = 0;
+    
+    // 检查超声波数据
+    if(ultrasonic_data.distance_mm < 20)
+	{  // 小于2cm
+        if(++anomaly_count > 5)
+		{
+            printf("Warning: Object too close! (%dmm)\r\n", ultrasonic_data.distance_mm);
+            anomaly_detected = 1;
+        }
+    }
+	else if(ultrasonic_data.distance_mm > 4000)
+	{  // 大于4m
+        if(++anomaly_count > 5)
+		{
+            printf("Warning: Ultrasonic reading out of range! (%dmm)\r\n", ultrasonic_data.distance_mm);
+            anomaly_detected = 1;
+        }
+    }
+	else
+	{
+        anomaly_count = 0;
+    }
+    
+    // 检查姿态角度
+    if(fabs(sensor_fusion.roll) > 45.0f || fabs(sensor_fusion.pitch) > 45.0f)
+	{
+        printf("Warning: Excessive tilt! Roll=%.1f, Pitch=%.1f\r\n", 
+               sensor_fusion.roll, sensor_fusion.pitch);
+        anomaly_detected = 1;
+    }
+    
+    // 检查电压
+    if(sensor_fusion.voltage_v < VOLTAGE_MIN)
+	{
+        printf("Warning: Low voltage! %.2fV\r\n", sensor_fusion.voltage_v);
+        anomaly_detected = 1;
+    }
+	else if(sensor_fusion.voltage_v > VOLTAGE_MAX)
+	{
+        printf("Warning: High voltage! %.2fV\r\n", sensor_fusion.voltage_v);
+        anomaly_detected = 1;
+    }
+    
+    if(anomaly_detected)
+	{
+        LED3_ON();  // 报警指示
+    }
+	else
+	{
+        LED3_OFF();
+    }
+}
 
 int main(void) 
 {

@@ -68,6 +68,7 @@ void System_Init(void);
 void Sensor_Self_Test(void);
 void Sensor_Fusion_Init(void);
 void Sensor_Fusion_Process(void);
+void Sensor_Anomaly_Detection(void);
 
 
 // 外部变量声明
