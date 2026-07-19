@@ -65,7 +65,7 @@ typedef struct
 
 // 函数声明
 void System_Init(void);
-
+void Sensor_Self_Test(void);
 
 // 外部变量声明
 extern System_State system_state;

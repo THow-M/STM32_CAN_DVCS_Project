@@ -37,7 +37,10 @@ SystemCtrl_Data system_ctrl = {0};
 uint8_t heartbeat_status[NODE_NUM] = {0};
 uint32_t heartbeat_time[NODE_NUM] = {0};
 
-// 系统初始化
+/** 函  数：系统初始化
+  * 参  数：无
+  * 返回值：无
+  */
 void System_Init(void)
 {
 	// 初始化定时器2
@@ -131,6 +134,57 @@ void System_Init(void)
 		LED3_OFF();
         Delay_ms(100);
     }
+}
+
+/** 函  数：传感器自检
+  * 参  数：无
+  * 返回值：无
+  */
+void Sensor_Self_Test(void)
+{
+    printf("=== Sensor Self Test ===\r\n");
+    
+    // MPU6050自检
+    printf("MPU6050 self test: ");
+    if(MPU6050_Self_Test())
+	{
+        printf("PASS\r\n");
+    }
+	else
+	{
+        printf("FAIL\r\n");
+        error_code |= ERROR_MPU6050_SELFTEST;
+    }
+    
+    // 超声波自检
+    printf("Ultrasonic test: ");
+    Ultrasonic_Trigger();
+    Delay_ms(100);
+    if(ultrasonic_data.valid)
+	{
+        printf("PASS (Distance: %dmm)\r\n", ultrasonic_data.distance_mm);
+    }
+	else
+	{
+        printf("FAIL\r\n");
+        error_code |= ERROR_ULTRASONIC_FAIL;
+    }
+    
+    // 电压检测自检
+    printf("Voltage detection test: ");
+    Voltage_Update();
+    Voltage_Data volt = Voltage_GetData();
+    if(volt.voltage_v > 5.0f && volt.voltage_v < 15.0f)
+	{
+        printf("PASS (Voltage: %.2fV)\r\n", volt.voltage_v);
+    }
+	else
+	{
+        printf("FAIL (Voltage: %.2fV)\r\n", volt.voltage_v);
+        error_code |= ERROR_VOLTAGE_FAIL;
+    }
+    
+    printf("=======================\r\n");
 }
 
 int main(void) 
