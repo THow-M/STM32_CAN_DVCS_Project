@@ -491,6 +491,100 @@ void Control_Loop(void)
     }
 }
 
+/** 函  数：通信处理
+  * 参  数：无
+  * 返回值：无
+  */
+void Communication_Handler(void)
+{
+    uint32_t current_time = HAL_GetTick();
+    
+    // 1. CAN数据处理
+    uint32_t can_id;
+    uint8_t can_data[8];
+    uint8_t can_len;
+    
+    while(MyCAN_Receive_Message(&can_id, can_data, &can_len))
+	{
+        //MyCAN_Data_Handler(can_id, can_len, can_data);
+    }
+    
+    // 2. 发送心跳包
+    if(current_time - last_heartbeat > HEARTBEAT_PERIOD)
+	{
+        last_heartbeat = current_time;
+        
+        uint8_t status = (system_state == SYS_ERROR) ? STATUS_ERROR : STATUS_NORMAL;
+        MyCAN_Send_Heartbeat(NODE_ID, status, error_code, system_uptime);
+        
+        // LED指示
+        static uint8_t heartbeat_led = 0;
+        heartbeat_led = !heartbeat_led;
+		if(heartbeat_led)
+		{
+			LED1_ON();
+		}
+		else
+		{
+			LED1_OFF();
+		}
+    }
+    
+    // 3. 发送传感器数据
+    if(current_time - last_can_send > 100)
+	{  // 100ms发送一次
+        last_can_send = current_time;
+        
+        if(can_connected && sensor_fusion.valid)
+		{
+            // 发送传感器数据
+            MyCAN_Send_SensorData(sensor_fusion.distance_mm,
+                                (int16_t)(sensor_fusion.pitch * 10),  // 0.1度精度
+                                (int16_t)(sensor_fusion.roll * 10),
+                                (int16_t)(sensor_fusion.yaw * 10),
+                                (uint16_t)(sensor_fusion.voltage_v * 1000));  // mV
+            
+            // LED指示
+            LED2_ON();
+        }
+    }
+	else if(current_time - last_can_send > 10)
+	{
+        LED2_OFF();
+    }
+    
+    // 4. 检查CAN连接状态
+    static uint32_t last_can_msg_time = 0;
+    static uint8_t can_msg_received = 0;
+    
+    for(uint8_t i = 0; i < NODE_NUM; i++)
+	{
+        if(i == NODE_ID - 1) continue;  // 跳过自己
+        
+        if(current_time - heartbeat_time[i] < HEARTBEAT_TIMEOUT)
+		{
+            can_msg_received = 1;
+            last_can_msg_time = current_time;
+        }
+    }
+    
+    if(can_msg_received && current_time - last_can_msg_time < CAN_TIMEOUT)
+	{
+        can_connected = 1;
+        LED3_ON();  // CAN连接指示
+    }
+	else
+	{
+        can_connected = 0;
+        LED3_OFF();
+        
+        if(system_uptime > 5)
+		{  // 系统启动5秒后
+            printf("CAN disconnected\r\n");
+        }
+    }
+}
+
 int main(void) 
 {
     System_Init();
