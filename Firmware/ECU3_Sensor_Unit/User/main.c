@@ -110,10 +110,10 @@ void System_Init(void)
     
     // 传感器自检
     printf("Running sensor self-tests...\r\n");
-    //Sensor_Self_Test();
+    Sensor_Self_Test();
     
     // 初始化传感器融合
-    //Sensor_Fusion_Init();
+    Sensor_Fusion_Init();
     
     // 启动系统
     system_state = SYS_READY;
@@ -206,6 +206,58 @@ void Sensor_Fusion_Init(void)
     
     printf("Sensor fusion initialized\r\n");
 }
+
+/** 函  数：传感器融合处理
+  * 参  数：无
+  * 返回值：无
+  */
+void Sensor_Fusion_Process(void)
+{
+    static uint32_t last_fusion_time = 0;
+    uint32_t current_time = HAL_GetTick();
+    float dt = (current_time - last_fusion_time) / 1000.0f;  // 转换为秒
+    
+    if(dt < 0.01f)
+	{  // 至少10ms
+        return;
+    }
+    
+    // 1. 更新MPU6050姿态
+    MPU6050_Calculate_Attitude(dt);
+    MPU6050_Data mpu = MPU6050_GetData();
+    
+    // 2. 更新超声波
+    Ultrasonic_Update();
+    
+    // 3. 更新电压
+    Voltage_Update();
+    Voltage_Data volt = Voltage_GetData();
+    
+    // 4. 融合数据
+    sensor_fusion.distance_mm = ultrasonic_data.distance_mm;
+    sensor_fusion.distance_cm = ultrasonic_data.distance_cm;
+    sensor_fusion.roll = mpu.roll;
+    sensor_fusion.pitch = mpu.pitch;
+    sensor_fusion.yaw = mpu.yaw;
+    sensor_fusion.voltage_v = volt.filtered_v;
+    sensor_fusion.temperature_c = mpu.temperature_c;
+    sensor_fusion.valid = ultrasonic_data.valid;
+    sensor_fusion.timestamp = current_time;
+    
+    // 5. 异常检测
+    //Sensor_Anomaly_Detection();
+    
+    // 6. 数据滤波
+    //Sensor_Data_Filtering();
+    
+    last_fusion_time = current_time;
+}
+
+/** 函  数：传感器融合处理
+  * 参  数：无
+  * 返回值：无
+  */
+
 
 int main(void) 
 {

@@ -67,6 +67,8 @@ typedef struct
 void System_Init(void);
 void Sensor_Self_Test(void);
 void Sensor_Fusion_Init(void);
+void Sensor_Fusion_Process(void);
+
 
 // 外部变量声明
 extern System_State system_state;
