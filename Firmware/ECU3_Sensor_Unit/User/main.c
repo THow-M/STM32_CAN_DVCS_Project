@@ -3,7 +3,6 @@
 #include "ecu3_main.h"
 #include "Timer.h"
 #include "Delay.h"
-#include "Key.h"
 #include "LED.h"
 #include "Serial.h"
 #include "MyCAN.h"
@@ -12,6 +11,7 @@
 #include "Voltage.h"
 #include <stdio.h>
 #include <math.h>
+#include <string.h>
 
 // 全局变量
 System_State system_state = SYS_IDLE;
@@ -506,7 +506,7 @@ void Communication_Handler(void)
     
     while(MyCAN_Receive_Message(&can_id, can_data, &can_len))
 	{
-        //MyCAN_Data_Handler(can_id, can_len, can_data);
+        CAN_Data_Handler(can_id, can_len, can_data);
     }
     
     // 2. 发送心跳包
@@ -582,6 +582,77 @@ void Communication_Handler(void)
 		{  // 系统启动5秒后
             printf("CAN disconnected\r\n");
         }
+    }
+}
+
+/** 函  数：CAN数据处理
+  * 参  数：无
+  * 返回值：无
+  */
+void CAN_Data_Handler(uint32_t id, uint8_t len, uint8_t* data)
+{
+    switch(id)
+	{
+        case MSG_ID_HEARTBEAT:
+		{
+            HeartBeat_Data *hb = (HeartBeat_Data*)data;
+            if(hb->node_id >= 1 && hb->node_id <= NODE_NUM)
+			{
+                heartbeat_time[hb->node_id - 1] = HAL_GetTick();
+                
+                if(hb->node_id == NODE_ID_ECU1)
+				{  // 来自ECU1
+                    can_connected = 1;
+                }
+            }
+            break;
+        }
+            
+        case MSG_ID_SYSTEM_CTRL:
+		{
+            if(len >= sizeof(SystemCtrl_Data))
+			{
+                memcpy(&system_ctrl, data, sizeof(SystemCtrl_Data));
+                
+                printf("Received SystemCtrl: Command=%d\r\n", system_ctrl.command);
+                
+                switch(system_ctrl.command)
+				{
+                    case SYS_CMD_START:
+                        system_state = SYS_RUN;
+                        printf("System started\r\n");
+                        break;
+                        
+                    case SYS_CMD_STOP:
+                        system_state = SYS_IDLE;
+                        printf("System stopped\r\n");
+                        break;
+                        
+                    case SYS_CMD_RESET:
+                        NVIC_SystemReset();
+                        break;
+                        
+                    case SYS_CMD_CALIBRATE:
+                        printf("Calibration requested\r\n");
+                        calibration_complete = 0;
+                        system_state = SYS_CALIBRATING;
+                        break;
+                        
+                    case SYS_CMD_DIAGNOSTIC:
+                        //System_Diagnostic();
+                        break;
+                        
+                    case SYS_CMD_SELF_TEST:
+                        Sensor_Self_Test();
+                        break;
+                }
+            }
+            break;
+        }
+            
+        default:
+            // 其他报文
+            break;
     }
 }
 

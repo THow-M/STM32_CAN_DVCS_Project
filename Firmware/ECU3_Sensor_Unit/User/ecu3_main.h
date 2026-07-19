@@ -73,6 +73,7 @@ void Sensor_Data_Filtering(void);
 void Auto_Calibration(void);
 void Control_Loop(void);
 void Communication_Handler(void);
+void CAN_Data_Handler(uint32_t id, uint8_t len, uint8_t* data);
 
 
 // 外部变量声明
