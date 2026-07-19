@@ -187,6 +187,26 @@ void Sensor_Self_Test(void)
     printf("=======================\r\n");
 }
 
+/** 函  数：传感器融合初始化
+  * 参  数：无
+  * 返回值：无
+  */
+void Sensor_Fusion_Init(void)
+{
+    // 初始化传感器融合数据结构
+    sensor_fusion.distance_mm = 0;
+    sensor_fusion.distance_cm = 0.0f;
+    sensor_fusion.roll = 0.0f;
+    sensor_fusion.pitch = 0.0f;
+    sensor_fusion.yaw = 0.0f;
+    sensor_fusion.voltage_v = 0.0f;
+    sensor_fusion.temperature_c = 0.0f;
+    sensor_fusion.valid = 0;
+    sensor_fusion.timestamp = 0;
+    
+    printf("Sensor fusion initialized\r\n");
+}
+
 int main(void) 
 {
     System_Init();
