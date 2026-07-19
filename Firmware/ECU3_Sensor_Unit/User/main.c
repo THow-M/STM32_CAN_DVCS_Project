@@ -432,6 +432,65 @@ void Auto_Calibration(void)
     }
 }
 
+/** 函  数：主控制循环
+  * 参  数：无
+  * 返回值：无
+  */
+void Control_Loop(void)
+{
+    uint32_t current_time = HAL_GetTick();
+    
+    // 1. 传感器融合处理
+    if(system_state == SYS_RUN || system_state == SYS_READY)
+	{
+        Sensor_Fusion_Process();
+        
+        // 调试输出
+        static uint32_t last_debug_time = 0;
+        if(current_time - last_debug_time > 1000)
+		{  // 每秒输出一次
+            last_debug_time = current_time;
+            
+            if(sensor_fusion.valid)
+			{
+                printf("Sensor: Dist=%dmm, Roll=%.1f, Pitch=%.1f, Volt=%.2fV, Temp=%.1fC\r\n",
+                       sensor_fusion.distance_mm,
+                       sensor_fusion.roll,
+                       sensor_fusion.pitch,
+                       sensor_fusion.voltage_v,
+                       sensor_fusion.temperature_c);
+            }
+        }
+    }
+    
+    // 2. 自动校准检查
+    static uint8_t calibration_requested = 0;
+    if(calibration_requested && !calibration_complete)
+	{
+        Auto_Calibration();
+    }
+    
+    // 3. 系统状态监测
+    static uint32_t last_status_check = 0;
+    if(current_time - last_status_check > 500)
+	{  // 每500ms检查一次
+        last_status_check = current_time;
+        
+        // 检查传感器状态
+        if(!ultrasonic_data.valid && system_uptime > 5)
+		{
+            error_code |= ERROR_ULTRASONIC_FAIL;
+            printf("Ultrasonic sensor failure detected\r\n");
+        }
+        
+        if(sensor_fusion.voltage_v < 9.0f)
+		{
+            error_code |= ERROR_VOLTAGE_LOW;
+            printf("Warning: Very low voltage! %.2fV\r\n", sensor_fusion.voltage_v);
+        }
+    }
+}
+
 int main(void) 
 {
     System_Init();

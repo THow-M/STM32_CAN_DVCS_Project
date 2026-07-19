@@ -71,6 +71,7 @@ void Sensor_Fusion_Process(void);
 void Sensor_Anomaly_Detection(void);
 void Sensor_Data_Filtering(void);
 void Auto_Calibration(void);
+void Control_Loop(void);
 
 
 // 外部变量声明
