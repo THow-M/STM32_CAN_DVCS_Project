@@ -586,7 +586,9 @@ void Communication_Handler(void)
 }
 
 /** 函  数：CAN数据处理
-  * 参  数：无
+  * 参  数：id CAN报文ID
+  * 参  数：len 接收数据长度
+  * 参  数：data 接受的数据
   * 返回值：无
   */
 void CAN_Data_Handler(uint32_t id, uint8_t len, uint8_t* data)
@@ -639,7 +641,7 @@ void CAN_Data_Handler(uint32_t id, uint8_t len, uint8_t* data)
                         break;
                         
                     case SYS_CMD_DIAGNOSTIC:
-                        //System_Diagnostic();
+                        System_Diagnostic();
                         break;
                         
                     case SYS_CMD_SELF_TEST:
@@ -654,6 +656,70 @@ void CAN_Data_Handler(uint32_t id, uint8_t len, uint8_t* data)
             // 其他报文
             break;
     }
+}
+
+/** 函  数：系统诊断
+  * 参  数：无
+  * 返回值：无
+  */
+void System_Diagnostic(void)
+{
+    printf("\r\n=== System Diagnostic ===\r\n");
+    printf("System State: %d\r\n", system_state);
+    printf("Uptime: %lu seconds\r\n", system_uptime);
+    printf("Error Code: 0x%02X\r\n", error_code);
+    printf("CAN Connected: %s\r\n", can_connected ? "Yes" : "No");
+    printf("Sensor Ready: %s\r\n", sensor_ready ? "Yes" : "No");
+    printf("Calibration Complete: %s\r\n", calibration_complete ? "Yes" : "No");
+    printf("\r\n");
+    
+    // 传感器数据
+    printf("Sensor Data:\r\n");
+    printf("Distance: %dmm (%.1fcm)\r\n", 
+           sensor_fusion.distance_mm, sensor_fusion.distance_cm);
+    printf("Roll: %.1f deg\r\n", sensor_fusion.roll);
+    printf("Pitch: %.1f deg\r\n", sensor_fusion.pitch);
+    printf("Yaw: %.1f deg\r\n", sensor_fusion.yaw);
+    printf("Voltage: %.2fV\r\n", sensor_fusion.voltage_v);
+    printf("Temperature: %.1fC\r\n", sensor_fusion.temperature_c);
+    printf("Valid: %s\r\n", sensor_fusion.valid ? "Yes" : "No");
+    printf("\r\n");
+    
+    // 原始传感器数据
+    MPU6050_Data mpu = MPU6050_GetData();
+    printf("MPU6050 Raw:\r\n");
+    printf("Accel: X=%d, Y=%d, Z=%d\r\n", mpu.accel_x, mpu.accel_y, mpu.accel_z);
+    printf("Gyro: X=%d, Y=%d, Z=%d\r\n", mpu.gyro_x, mpu.gyro_y, mpu.gyro_z);
+    printf("Temp: %.1fC\r\n", mpu.temperature_c);
+    printf("\r\n");
+    
+    // 超声波数据
+    printf("Ultrasonic:\r\n");
+    printf("Distance: %dmm\r\n", ultrasonic_data.distance_mm);
+    printf("Valid: %s\r\n", ultrasonic_data.valid ? "Yes" : "No");
+    printf("Signal Strength: %d%%\r\n", ultrasonic_data.signal_strength);
+    printf("\r\n");
+    
+    // 电压数据
+    Voltage_Data volt = Voltage_GetData();
+    printf("Voltage:\r\n");
+    printf("Voltage: %.2fV (%dmV)\r\n", volt.voltage_v, volt.voltage_mv);
+    printf("Battery: %d%%\r\n", volt.battery_percent);
+    printf("Status: %d\r\n", volt.status);
+    printf("\r\n");
+    
+    // 心跳状态
+    printf("Heartbeat Status:\r\n");
+    for(uint8_t i = 0; i < NODE_NUM; i++)
+	{
+        uint32_t time_since = HAL_GetTick() - heartbeat_time[i];
+        printf("Node %d: %s (%.1fs ago)\r\n", 
+               i + 1, 
+               time_since < HEARTBEAT_TIMEOUT ? "Online" : "Offline",
+               time_since / 1000.0f);
+    }
+    
+    printf("===========================\r\n\r\n");
 }
 
 int main(void) 
