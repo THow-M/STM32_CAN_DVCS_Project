@@ -728,9 +728,82 @@ int main(void)
 {
     System_Init();
 	
+	printf("ECU3 Main Loop Started\r\n");
+	
     while(1) 
 	{
+        uint32_t current_time = HAL_GetTick();
         
+        // 更新运行时间
+        if(current_time - last_status_update >= 1000)
+		{  // 1秒
+            last_status_update = current_time;
+            system_uptime++;
+            
+            // 每5秒输出一次状态
+            if(system_uptime % 5 == 0)
+			{
+                printf("Uptime: %lus, State: %d, CAN: %s\r\n",
+                       system_uptime, system_state, can_connected ? "Connected" : "Disconnected");
+            }
+        }
+        
+        // 控制循环
+        Control_Loop();
+        
+        // 通信处理
+        Communication_Handler();
+        
+        // 系统状态机
+        switch(system_state)
+		{
+            case SYS_IDLE:
+                // 空闲状态
+				LED1_OFF();
+				LED2_OFF();
+				LED3_OFF();
+                break;
+                
+            case SYS_READY:
+                // 准备就绪，LED慢闪
+                if((current_time / 500) % 2 == 0)
+				{
+                    LED1_ON();
+					LED2_ON();
+					LED3_ON();
+                }
+				else
+				{
+                    LED1_OFF();
+					LED2_OFF();
+					LED3_OFF();
+                }
+                break;
+                
+            case SYS_RUN:
+                // 运行状态，LED常亮
+                LED1_ON();
+				LED2_ON();
+				LED3_ON();
+                break;
+                
+            case SYS_ERROR:
+                // 错误状态
+                Error_Handler();
+                break;
+                
+            case SYS_CALIBRATING:
+                // 校准状态
+                Auto_Calibration();
+                if(calibration_complete)
+				{
+                    system_state = SYS_READY;
+                }
+                break;
+        }
+        
+        // 简单延时
+        Delay_ms(1);
 		
     }
 }
