@@ -110,9 +110,14 @@ uint8_t MyCAN_Send_Message(uint32_t ID,uint8_t Len,uint8_t* Data)
 	TxMessage.IDE = CAN_Id_Standard;
 	TxMessage.RTR = CAN_RTR_Data;
 	TxMessage.DLC = Len;
-	for(uint8_t i = 0;i < 8;i++)
+	for(uint8_t i = 0;i < Len;i++)
 	{
 		TxMessage.Data[i] = Data[i];
+	}
+	
+	for(uint8_t i = Len;i < 8;i++)
+	{
+		TxMessage.Data[i] = 0;
 	}
 	
 	mailbox = CAN_Transmit(CAN1,&TxMessage);
@@ -126,7 +131,7 @@ uint8_t MyCAN_Send_Message(uint32_t ID,uint8_t Len,uint8_t* Data)
 	{
 		timeout ++;
 		if(timeout > 100000)
-			break;
+			return 0;
 	}
 	return 1;
 }
