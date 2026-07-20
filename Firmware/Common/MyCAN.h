@@ -51,7 +51,7 @@ typedef struct
 {
 	int16_t actual_speed;         //实际速度（RPM）
 	uint16_t current;             //电流（mA）
-	//uint8_t temperature;          //温度（）
+	uint8_t temperature;          //温度（）
 	uint8_t status;               //状态位
 	uint16_t resevered;           //保留
 } MotorStatus_Data;
