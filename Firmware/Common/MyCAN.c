@@ -4,6 +4,7 @@
 
 CanTxMsg TxMessage;
 CanRxMsg RxMessage;
+uint8_t MyCAN_RxFlag = 0;
 
 void MyCAN_Init(CAN_BaudRate baudrate)
 {
@@ -143,12 +144,10 @@ uint8_t MyCAN_Send_Message(uint32_t ID,uint8_t Len,uint8_t* Data)
   */
 uint8_t MyCAN_Receive_Message(uint32_t* ID, uint8_t* Len, uint8_t* Data)
 {
-    if(CAN_MessagePending(CAN1, CAN_FIFO0) == 0)
+    if(MyCAN_RxFlag == 0)
 	{
         return 0;
     }
-    
-    CAN_Receive(CAN1, CAN_FIFO0, &RxMessage);
     
     *ID = RxMessage.StdId;
     *Len = RxMessage.DLC;
@@ -157,6 +156,8 @@ uint8_t MyCAN_Receive_Message(uint32_t* ID, uint8_t* Len, uint8_t* Data)
 	{
         Data[i] = RxMessage.Data[i];
     }
+	
+	MyCAN_RxFlag = 0;
     
     return 1;
 }
@@ -274,5 +275,6 @@ void USB_LP_CAN1_RX0_IRQHandler(void)
 	if(CAN_GetFlagStatus(CAN1,CAN_FLAG_FMP0) == SET)
 	{
 		CAN_Receive(CAN1,CAN_FIFO0,&RxMessage);
+		MyCAN_RxFlag = 1;
 	}
 }
