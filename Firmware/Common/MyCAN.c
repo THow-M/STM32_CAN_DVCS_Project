@@ -4,7 +4,6 @@
 
 CanTxMsg TxMessage;
 CanRxMsg RxMessage;
-uint8_t MyCAN_RxFlag;
 
 void MyCAN_Init(CAN_BaudRate baudrate)
 {
@@ -275,6 +274,5 @@ void USB_LP_CAN1_RX0_IRQHandler(void)
 	if(CAN_GetFlagStatus(CAN1,CAN_FLAG_FMP0) == SET)
 	{
 		CAN_Receive(CAN1,CAN_FIFO0,&RxMessage);
-		MyCAN_RxFlag = 1;
 	}
 }
