@@ -4,7 +4,7 @@
 //--------------------------系统常量-----------------------------
 #define NODE_NUM                  3         //ECU节点总数
 #define HEARTBEAT_TIMEOUT         3000      //心跳超时时间（ms）
-#define HEARTBEAT_PERIOD          1000      //心跳发送周期（ms）
+#define CAN_TIMEOUT               5000      // 5秒
 
 // 系统状态定义
 typedef enum
@@ -28,10 +28,6 @@ typedef enum
 #define SYS_CMD_AUTO         5
 #define SYS_CMD_CALIBRATE    6
 #define SYS_CMD_DIAGNOSTIC   7
-
-// 超时定义
-#define HEARTBEAT_TIMEOUT    3000  // 3秒
-#define CAN_TIMEOUT          5000  // 5秒
 
 //函数声明
 void System_Init(void);

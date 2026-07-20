@@ -20,7 +20,6 @@ typedef enum
 //--------------------------系统常量-----------------------------
 #define NODE_NUM                  3         //ECU节点总数
 #define HEARTBEAT_TIMEOUT         3000      //心跳超时时间（ms）
-#define HEARTBEAT_PERIOD          1000      //心跳发送周期（ms）
 
 //------------------------外部全局变量声明-----------------------
 extern System_State system_state;

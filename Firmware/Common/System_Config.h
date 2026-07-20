@@ -2,7 +2,7 @@
 #define __SYSTEM_CONFIG_H
 
 //系统时钟配置
-#define SYSTEM_CLOCK_FREQ 72000000;
+#define SYSTEM_CLOCK_FREQ 72000000
 
 //ECU1节点配置
 #ifdef ECU1
