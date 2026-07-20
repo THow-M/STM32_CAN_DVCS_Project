@@ -362,9 +362,9 @@ void System_Monitor_Mode(void)
         OLED_ShowString(0, 24, "ECU3:", OLED_6X8);
         OLED_ShowString(5*6, 24, heartbeat_status[2] ? "Online" : "Offline", OLED_6X8);
         
-        OLED_ShowString(2*6, 32, "MotorTemp:", OLED_6X8);
-        OLED_ShowNum(12*6, 32, motor_status.temperature, 3, OLED_6X8);
-        OLED_ShowString(15*6, 32, "C", OLED_6X8);
+        //OLED_ShowString(2*6, 32, "MotorTemp:", OLED_6X8);
+        //OLED_ShowNum(12*6, 32, motor_status.temperature, 3, OLED_6X8);
+        //OLED_ShowString(15*6, 32, "C", OLED_6X8);
         
         OLED_ShowString(2*6, 40, "MotorCurrent:", OLED_6X8);
         OLED_ShowNum(15*6, 40, motor_status.current, 4, OLED_6X8);
@@ -794,6 +794,7 @@ void TIM2_IRQHandler(void)
 {
 	if (TIM_GetITStatus(TIM2, TIM_IT_Update) == SET)
 	{
+		Tick_ms ++;
 		Key_Scan();
 		
 		
