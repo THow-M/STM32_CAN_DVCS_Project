@@ -52,7 +52,7 @@ typedef struct {
 #define ERROR_OVER_CURRENT     0x01
 #define ERROR_OVER_TEMP        0x02
 #define ERROR_STALL            0x04
-#define ERROR_OVER_VOLTAGE     0x08
+#define ERROR_OVER_SPEED     0x08
 #define ERROR_UNDER_VOLTAGE    0x10
 
 #define MOTOR_MAX_CURRENT     2000
