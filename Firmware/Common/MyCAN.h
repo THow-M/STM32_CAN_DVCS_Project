@@ -2,7 +2,7 @@
 #define __MYCAN_H
 
 extern CanRxMsg RxMessage;
-extern uint8_t MyCAN_RxFlag;
+extern volatile uint8_t MyCAN_RxFlag;
 
 //CAN波特率定义
 typedef enum

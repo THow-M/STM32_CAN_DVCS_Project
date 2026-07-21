@@ -296,7 +296,8 @@ void Sensor_Display_Mode(void)
         OLED_ShowString(9*8, 32, "deg", OLED_8X16);
         
         OLED_ShowString(0, 48, "Yaw:", OLED_8X16);
-        OLED_ShowSignedNum(4*8, 48, sensor_data.yaw, 4, OLED_8X16);
+        OLED_ShowSignedNum(4*8, 48, sensor_data.yaw_high, 2, OLED_8X16);
+		OLED_ShowNum(6*8, 48, sensor_data.yaw_low, 2, OLED_8X16);
         OLED_ShowString(8*8, 48, "deg", OLED_8X16);
         
         OLED2_ShowString(0, 16, "Voltage:", OLED_8X16);
@@ -435,7 +436,7 @@ void CAN_Test_Mode(void)
 		OLED_ShowString(0, 16, "RX ID:", OLED_8X16);
 		OLED_ShowString(0, 32, "Data:", OLED_8X16);
         
-        if(MyCAN_Receive_Message(&can_id, can_data, &can_len))
+        if(MyCAN_Receive_Message(&can_id, &can_len, can_data))
 		{
             //OLED_ShowString(0, 16, "RX ID:", OLED_8X16);
             OLED_ShowHexNum(6*8, 16, can_id, 3, OLED_8X16);

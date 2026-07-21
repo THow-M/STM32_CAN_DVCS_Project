@@ -193,7 +193,7 @@ void Communication_Handler(void)
     uint8_t can_data[8];
     uint8_t can_len;
     
-    while(MyCAN_Receive_Message(&can_id, can_data, &can_len))
+    while(MyCAN_Receive_Message(&can_id, &can_len, can_data))
 	{
         MyCAN_Data_Handler(can_id, can_len,can_data);
     }

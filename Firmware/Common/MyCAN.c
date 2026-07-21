@@ -4,7 +4,7 @@
 
 CanTxMsg TxMessage;
 CanRxMsg RxMessage;
-uint8_t MyCAN_RxFlag = 0;
+volatile uint8_t MyCAN_RxFlag = 0;
 
 void MyCAN_Init(CAN_BaudRate baudrate)
 {
