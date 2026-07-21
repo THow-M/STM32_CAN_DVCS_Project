@@ -227,7 +227,8 @@ void MyCAN_Send_SensorData(uint16_t distance, int16_t pitch, int16_t roll, int16
     sensor.distance = distance;
     sensor.pitch = pitch;
     sensor.roll = roll;
-    sensor.yaw = yaw;
+    sensor.yaw_high = (uint8_t)(yaw >> 8);
+    sensor.yaw_low = (uint8_t)(yaw & 0xFF);
     sensor.voltage = voltage;
     
     MyCAN_Send_Message(MSG_ID_SENSOR_DATA, sizeof(Sensor_Data), (uint8_t*)&sensor);

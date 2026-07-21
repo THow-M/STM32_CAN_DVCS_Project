@@ -60,11 +60,12 @@ typedef struct
 //传感器数据结构（8字节）
 typedef struct
 {
-	uint16_t distance;            //距离（mm）
-	int16_t pitch;                //俯仰角（0.1度）
-	int16_t roll;                 //横滚角（0.1度）
-	int16_t yaw;                  //航向角（0.1度）
-	uint16_t voltage;             //电压（mV）
+    uint16_t distance;            //距离（mm）
+    int16_t pitch;                //俯仰角（0.1度）
+    int16_t roll;                 //横滚角（0.1度）
+    uint8_t yaw_high;             //航向角高8位（0.1度）
+    uint8_t yaw_low;              //航向角低8位（0.1度）
+    uint16_t voltage;             //电压（mV）
 } Sensor_Data;
 
 //系统控制数据结构（8字节）
