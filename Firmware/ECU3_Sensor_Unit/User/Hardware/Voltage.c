@@ -210,6 +210,11 @@ void Voltage_Calibrate(float actual_voltage)
     
     // 计算校准因子
     float measured_voltage = adc_value * ADC_REF_VOLTAGE / ADC_RESOLUTION;
+	if(measured_voltage < 0.01f)
+	{
+		printf("Calibration failed: ADC reads zero or too low\r\n");
+		return;
+	}
     voltage_calibration_factor = actual_voltage / measured_voltage;
     
     printf("Voltage calibration:\r\n");
