@@ -106,6 +106,8 @@ void System_Init(void)
     printf("Control Mode: %s\r\n", 
            control_mode == CONTROL_MODE_MANUAL ? "Manual" : "Auto");
     printf("Waiting for commands...\r\n");
+	
+	heartbeat_time[NODE_ID - 1] = HAL_GetTick();
     
 	//启动成功指示
     LED_ON();
@@ -205,6 +207,8 @@ void Communication_Handler(void)
         
         uint8_t status = (system_state == SYS_ERROR) ? STATUS_ERROR : STATUS_NORMAL;
         MyCAN_Send_Heartbeat(NODE_ID, status, error_code, system_uptime);
+		
+		heartbeat_time[NODE_ID - 1] = current_time;
         
         // LED指示
         //LEDx_ON();

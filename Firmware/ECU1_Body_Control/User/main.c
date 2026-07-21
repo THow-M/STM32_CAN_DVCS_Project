@@ -80,6 +80,8 @@ void System_Init(void)
     Delay_ms(2000);
     
     system_state = SYSTEM_READY;
+	
+	heartbeat_time[NODE_ID - 1] = HAL_GetTick();
     
     printf("System initialized successfully!\r\n");
 }
@@ -552,6 +554,7 @@ void HeartBeat_Manager(void)
         // LED指示
         LED1_Turn();
     }
+	heartbeat_time[NODE_ID - 1] = current_time;
     
     // 检查其他节点心跳
     static uint32_t last_check_time = 0;

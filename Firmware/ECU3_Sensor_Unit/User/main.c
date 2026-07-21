@@ -122,6 +122,8 @@ void System_Init(void)
     
     printf("System initialized successfully!\r\n");
     
+	heartbeat_time[NODE_ID - 1] = HAL_GetTick();
+	
     // 启动成功指示
     for(int i = 0; i < 3; i++)
 	{
@@ -517,6 +519,8 @@ void Communication_Handler(void)
         uint8_t status = (system_state == SYS_ERROR) ? STATUS_ERROR : STATUS_NORMAL;
         MyCAN_Send_Heartbeat(NODE_ID, status, error_code, system_uptime);
         
+		heartbeat_time[NODE_ID - 1] = current_time;
+		
         // LED指示
         static uint8_t heartbeat_led = 0;
         heartbeat_led = !heartbeat_led;
