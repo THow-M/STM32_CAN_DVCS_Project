@@ -51,6 +51,10 @@ uint32_t heartbeat_time[NODE_NUM] = {0};
   */
 void System_Init(void)
 {
+	NVIC_PriorityGroupConfig(NVIC_PriorityGroup_2);
+	
+	Timer_Init();
+	
 	Serial_Init(DEBUG_BAUDRATE);
 	
 	printf("\r\n\r\n");
@@ -59,8 +63,6 @@ void System_Init(void)
     printf("  Version: 1.0.0\r\n");
     printf("  Build Date: %s %s\r\n", __DATE__, __TIME__);
     printf("================================\r\n\r\n");
-	
-	Timer_Init();
 	
     LED_Init();
     

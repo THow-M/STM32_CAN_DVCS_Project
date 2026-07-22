@@ -27,7 +27,7 @@ void MyCAN_Init(CAN_BaudRate baudrate)
 	//使能CAN接收中断
 	CAN_ITConfig(CAN1,CAN_IT_FMP0,ENABLE);
 	
-	NVIC_PriorityGroupConfig(NVIC_PriorityGroup_2);
+	//NVIC_PriorityGroupConfig(NVIC_PriorityGroup_2);
 	
 	NVIC_InitTypeDef NVIC_InitStructure;
 	NVIC_InitStructure.NVIC_IRQChannel = USB_LP_CAN1_RX0_IRQn;

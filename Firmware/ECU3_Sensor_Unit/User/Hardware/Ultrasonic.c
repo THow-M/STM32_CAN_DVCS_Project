@@ -78,7 +78,7 @@ void Ultrasonic_Init(void)
     TIM_ITConfig(TIM4, TIM_IT_CC4, ENABLE);
     
     /* 7. NVIC 配置 */
-    NVIC_PriorityGroupConfig(NVIC_PriorityGroup_2);
+    //NVIC_PriorityGroupConfig(NVIC_PriorityGroup_2);
     NVIC_InitStructure.NVIC_IRQChannel = TIM4_IRQn;
     NVIC_InitStructure.NVIC_IRQChannelPreemptionPriority = 1;
     NVIC_InitStructure.NVIC_IRQChannelSubPriority = 1;

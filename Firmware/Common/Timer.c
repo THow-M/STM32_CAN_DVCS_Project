@@ -31,7 +31,7 @@ void Timer_Init(void)
 	TIM_ITConfig(TIM2, TIM_IT_Update, ENABLE);					//开启TIM2的更新中断
 	
 	/*NVIC中断分组*/
-	NVIC_PriorityGroupConfig(NVIC_PriorityGroup_2);				//配置NVIC为分组2
+	//NVIC_PriorityGroupConfig(NVIC_PriorityGroup_2);				//配置NVIC为分组2
 																//即抢占优先级范围：0~3，响应优先级范围：0~3
 																//此分组配置在整个工程中仅需调用一次
 																//若有多个中断，可以把此代码放在main函数内，while循环之前

@@ -43,6 +43,8 @@ uint32_t heartbeat_time[NODE_NUM] = {0};
   */
 void System_Init(void)
 {
+	NVIC_PriorityGroupConfig(NVIC_PriorityGroup_2);
+	
 	// 初始化定时器2
 	Timer_Init();
 	

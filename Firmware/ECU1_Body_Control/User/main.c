@@ -42,12 +42,14 @@ const char *menu_items[] = {
   */
 void System_Init(void)
 {
+	NVIC_PriorityGroupConfig(NVIC_PriorityGroup_2);
+	
     // 初始化外设
+	Timer_Init();
     LED_Init();
     Key_Init();
     OLED_Init();
 	OLED2_Init();
-	Timer_Init();
     Serial_Init(DEBUG_BAUDRATE);
     MyCAN_Init(CAN_BAUDRATE);
     
