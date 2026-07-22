@@ -1,6 +1,11 @@
 #include "stm32f10x.h"                  // Device header
 #include "MyCAN.h"
 #include "Delay.h"
+#include <stddef.h>
+
+#define CAN_STD_ID_MAX      0x7FFU
+#define CAN_EXT_ID_MAX      0x1FFFFFFFU
+#define CAN_MAX_DLC         8U
 
 CanTxMsg TxMessage;
 CanRxMsg RxMessage;
@@ -109,6 +114,12 @@ uint8_t MyCAN_Send_Message(uint32_t ID,uint8_t Len,uint8_t* Data)
 	uint8_t mailbox;
 	uint32_t timeout = 0;
 	
+	//参数校验
+    if ((Data == NULL) || (Len > CAN_MAX_DLC) || (ID > CAN_STD_ID_MAX))
+    {
+        return 0;
+    }
+	
 	TxMessage.StdId = ID;
 	TxMessage.ExtId = 0x00;
 	TxMessage.IDE = CAN_Id_Standard;
@@ -135,7 +146,10 @@ uint8_t MyCAN_Send_Message(uint32_t ID,uint8_t Len,uint8_t* Data)
 	{
 		timeout ++;
 		if(timeout > 100000)
+		{
+			CAN_CancelTransmit(CAN1, mailbox);
 			return 0;
+		}
 	}
 	return 1;
 }
