@@ -46,7 +46,7 @@ typedef struct
 	uint8_t node_id;              //节点ID
 	uint8_t status;               //状态：0=正常，1=警告，2=错误
 	uint8_t error_code;           //错误代码
-	uint8_t resevered;            //保留字节
+	uint8_t reserved;            //保留字节
 	uint32_t uptime;              //运行时间（秒）
 } HeartBeat_Data;
 
@@ -66,7 +66,7 @@ typedef struct
 	uint16_t current;             //电流（mA）
 	uint8_t temperature;          //温度（）
 	uint8_t status;               //状态位
-	uint16_t resevered;           //保留
+	uint16_t reserved;           //保留
 } MotorStatus_Data;
 
 //传感器数据结构（8字节）
