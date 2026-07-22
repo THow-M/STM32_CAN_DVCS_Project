@@ -7,7 +7,7 @@
 #define KEY_TIME_LONG       2000     // 长按判定时间（ms）
 #define KEY_TIME_REPEAT     100      // 重复触发间隔（ms）
 
-uint8_t Key_Flag[KEY_COUNT];         //标志位
+volatile uint8_t Key_Flag[KEY_COUNT];         //标志位
 
 
 /**

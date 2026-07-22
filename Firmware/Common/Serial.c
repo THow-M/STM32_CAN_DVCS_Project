@@ -2,8 +2,8 @@
 #include <stdio.h>
 #include <stdarg.h>
 
-char Serial_RxPacket[100];				//定义接收数据包数组，数据包格式"@MSG\r\n"
-uint8_t Serial_RxFlag;					//接收数据包标志位
+volatile char Serial_RxPacket[100];				//定义接收数据包数组，数据包格式"@MSG\r\n"
+volatile uint8_t Serial_RxFlag;					//接收数据包标志位
 
 /**
   * 串口初始化

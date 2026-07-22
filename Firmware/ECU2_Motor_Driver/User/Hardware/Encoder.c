@@ -12,10 +12,10 @@
 #define ENCODER_PIN_B            GPIO_Pin_7  // PA7 - TIM3_CH2
 
 // 编码器全局变量
-Encoder_Data encoder_data = {0};
+volatile Encoder_Data encoder_data = {0};
 static int32_t encoder_total_pulses = 0;    // 总脉冲数
 static int32_t encoder_last_count = 0;      // 上次计数值
-uint32_t last_speed_time = 0;               // 上次测速时间
+static volatile uint32_t last_speed_time = 0;               // 上次测速时间
 
 /** 函  数：编码器初始化
   * 参  数：无
