@@ -8,7 +8,7 @@
 #define CAN_MAX_DLC         8U
 
 CanTxMsg TxMessage;
-CanRxMsg RxMessage;
+static CAN_RxBuffer_t can_rx_buf = {0};
 volatile uint8_t MyCAN_RxFlag = 0;
 
 void MyCAN_Init(CAN_BaudRate baudrate)
@@ -162,20 +162,29 @@ uint8_t MyCAN_Send_Message(uint32_t ID,uint8_t Len,uint8_t* Data)
   */
 uint8_t MyCAN_Receive_Message(uint32_t* ID, uint8_t* Len, uint8_t* Data)
 {
-    if(MyCAN_RxFlag == 0)
-	{
+    uint8_t i;
+    
+    if ((ID == NULL) || (Len == NULL) || (Data == NULL))
+    {
         return 0;
     }
     
-    *ID = RxMessage.StdId;
-    *Len = RxMessage.DLC;
-    
-    for(uint8_t i = 0; i < RxMessage.DLC; i++)
-	{
-        Data[i] = RxMessage.Data[i];
+    if (can_rx_buf.count == 0)
+    {
+        return 0;
     }
-	
-	MyCAN_RxFlag = 0;
+    
+    // 临界区：防止 ISR 在读取过程中修改
+    __disable_irq();
+    *ID = can_rx_buf.msg[can_rx_buf.tail].StdId;
+    *Len = can_rx_buf.msg[can_rx_buf.tail].DLC;
+    for (i = 0; i < *Len; i++)
+    {
+        Data[i] = can_rx_buf.msg[can_rx_buf.tail].Data[i];
+    }
+    can_rx_buf.tail = (can_rx_buf.tail + 1) % CAN_RX_BUF_SIZE;
+    can_rx_buf.count--;
+    __enable_irq();
     
     return 1;
 }
@@ -291,9 +300,24 @@ void MyCAN_Send_ErrorReport(uint8_t node_id, uint8_t error_type, uint16_t error_
   */
 void USB_LP_CAN1_RX0_IRQHandler(void)
 {
-	if(CAN_GetFlagStatus(CAN1,CAN_FLAG_FMP0) == SET)
-	{
-		CAN_Receive(CAN1,CAN_FIFO0,&RxMessage);
-		MyCAN_RxFlag = 1;
-	}
+	// 读取 FIFO 中所有挂起的报文（最多 3 帧）
+    while (CAN_GetFlagStatus(CAN1, CAN_FLAG_FMP0) != RESET)
+    {
+        if (can_rx_buf.count < CAN_RX_BUF_SIZE)
+        {
+            CAN_Receive(CAN1, CAN_FIFO0, 
+                       &can_rx_buf.msg[can_rx_buf.head]);
+            can_rx_buf.head = (can_rx_buf.head + 1) % CAN_RX_BUF_SIZE;
+            can_rx_buf.count++;
+        }
+        else
+        {
+            // 缓冲区满，丢弃最旧报文
+            can_rx_buf.tail = (can_rx_buf.tail + 1) % CAN_RX_BUF_SIZE;
+            CAN_Receive(CAN1, CAN_FIFO0, 
+                       &can_rx_buf.msg[can_rx_buf.head]);
+            can_rx_buf.head = (can_rx_buf.head + 1) % CAN_RX_BUF_SIZE;
+            can_rx_buf.overflow++;
+        }
+    }
 }

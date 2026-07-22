@@ -1,8 +1,19 @@
 #ifndef __MYCAN_H
 #define __MYCAN_H
 
-extern CanRxMsg RxMessage;
+
 extern volatile uint8_t MyCAN_RxFlag;
+
+#define CAN_RX_BUF_SIZE 8            // 接收环形缓冲区大小
+
+typedef struct
+{
+    CanRxMsg msg[CAN_RX_BUF_SIZE];   // 8 个消息槽
+    volatile uint8_t head;           // 写入位置（ISR 写）
+    volatile uint8_t tail;           // 读出位置（主循环读）
+    volatile uint8_t count;          // 当前已缓存帧数
+    volatile uint8_t overflow;       // 溢出计数（丢了多少帧）
+} CAN_RxBuffer_t;
 
 //CAN波特率定义
 typedef enum
