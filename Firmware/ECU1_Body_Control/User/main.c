@@ -781,12 +781,17 @@ void Error_Handler(void)
         LED3_Turn();
         //LED4_Turn();
     }
+	
+	ErrorReport_Data error;
     
     // 尝试恢复
     static uint32_t error_start = 0;
-    if(error_start == 0)
-	{
+	static uint8_t error_active = 0;
+    if (!error_active)
+    {
         error_start = HAL_GetTick();
+        error_active = 1;
+        printf("Error: 0x%02X at %du ms\r\n", error.error_code, error_start);
     }
     
     // 5秒后尝试重启
@@ -794,6 +799,11 @@ void Error_Handler(void)
 	{
         printf("System reset after error...\r\n");
         NVIC_SystemReset();
+    }
+	
+	if (error.error_code == ERROR_NONE)
+    {
+        error_active = 0;
     }
 }
 
