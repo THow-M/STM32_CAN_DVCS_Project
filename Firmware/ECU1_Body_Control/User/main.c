@@ -448,7 +448,7 @@ void CAN_Test_Mode(void)
             //OLED_ShowString(0, 32, "Data:", OLED_8X16);
             for(uint8_t i = 0; i < can_len && i < 8; i++)
 			{
-                OLED_ShowHexNum( 5*8 + 8*i, 32, can_data[i], 8, OLED_8X16);
+                OLED_ShowHexNum( 5*8 + 2*8*i, 32, can_data[i], 2, OLED_8X16);
             }
         }
 		
