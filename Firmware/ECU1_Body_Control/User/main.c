@@ -671,14 +671,15 @@ void CAN_Data_Handler(uint32_t id, uint8_t len, uint8_t* data)
 				default:
 					printf("Unknown error type\r\n");
 					break;
-					
 			}
+			break;
 		}
             
         default:
 		{	// 未知报文处理
+			uint8_t print_len = (len > 8) ? 8 : len;
 			printf("Unknown CAN message: ID=0x%03x, Len=%d, Data=",id,len);
-			for(uint8_t i = 0;i < len;i ++)
+			for(uint8_t i = 0;i < print_len;i ++)
 			{
 				printf("%02x",data[i]);
 			}
