@@ -503,6 +503,22 @@ void Parameter_Setting_Mode(void)
                 // 保存参数到EEPROM（这里简化处理）
                 printf("Parameters saved: Baudrate=%s, Heartbeat=%ds\r\n", 
                        baudrate_names[can_baudrate], heartbeat_period);
+					
+				/* 重新初始化 CAN */
+				CAN_DeInit(CAN1);
+				MyCAN_Init((CAN_BaudRate)can_baudrate);
+        
+				/* 更新心跳周期 */
+				//HeartBeat_SetPeriod(heartbeat_period);
+        
+				/* TODO: 保存到 EEPROM/Flash */
+				// EEPROM_Write(EEPROM_ADDR_CAN_BAUDRATE, can_baudrate);
+				// EEPROM_Write(EEPROM_ADDR_HEARTBEAT_PERIOD, heartbeat_period);
+        
+				printf("Parameters applied. System restart...\r\n");
+				Delay_ms(100);
+				NVIC_SystemReset();
+				
                 system_state = SYSTEM_READY;
                 return;
         }
