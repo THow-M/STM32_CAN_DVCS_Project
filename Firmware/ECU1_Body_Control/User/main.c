@@ -203,6 +203,8 @@ void Remote_Control_Mode(void)
     
     while(system_state == REMOTE_CONTROL)
 	{
+		HeartBeat_Manager();
+		
         // 处理按键
         uint8_t key = Key_Check(KEY_SINGLE);
         if(key == KEY4_PRESS)
@@ -275,6 +277,8 @@ void Sensor_Display_Mode(void)
     
     while(system_state == SENSOR_DISPLAY)
 	{
+		HeartBeat_Manager();
+		
         // 处理按键
         if(Key_Check(KEY_SINGLE) == KEY4_PRESS)
 		{
@@ -327,6 +331,8 @@ void System_Monitor_Mode(void)
     
     while(system_state == SYSTEM_MONITOR)
 	{
+		HeartBeat_Manager();
+		
         // 处理按键
         if(Key_Check(KEY_SINGLE) == KEY4_PRESS)
 		{
@@ -398,6 +404,8 @@ void CAN_Test_Mode(void)
     
     while(system_state == CAN_TEST)
 	{
+		HeartBeat_Manager();
+		
         // 处理按键
         uint8_t key = Key_Check(KEY_SINGLE);
         if(key == KEY4_PRESS)
@@ -476,6 +484,8 @@ void Parameter_Setting_Mode(void)
     
     while(system_state == PARAM_SETTING)
 	{
+		HeartBeat_Manager();
+		
         uint8_t key = Key_Check(KEY_SINGLE);
         
         switch(key)
