@@ -527,7 +527,7 @@ void Parameter_Setting_Mode(void)
         
 				printf("Parameters applied. System restart...\r\n");
 				Delay_ms(100);
-				NVIC_SystemReset();
+				//NVIC_SystemReset();
 				
                 system_state = SYSTEM_READY;
                 return;
