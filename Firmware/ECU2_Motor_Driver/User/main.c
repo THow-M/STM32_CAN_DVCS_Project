@@ -21,6 +21,9 @@ uint8_t error_code = ERROR_NONE;
 uint8_t can_connected = 0;
 static uint8_t led_blink_state = 0;
 
+static uint8_t diagnostic_requested = 0;
+static uint8_t calibration_requested = 0;
+
 
 // 控制变量
 PID_Controller speed_pid;
@@ -159,7 +162,7 @@ void Control_Loop(void)
             actual_speed_rpm = encoder.speed_rpm;
             
             // PID计算
-            pid_output = PID_Calculate(&speed_pid, target_speed_rpm, actual_speed_rpm, 0.01f);
+            pid_output = PID_Calculate(&speed_pid, target_speed_rpm, actual_speed_rpm, dt);
             
             // 设置电机速度
             int16_t speed = (int16_t)pid_output;
@@ -400,11 +403,11 @@ void MyCAN_Data_Handler(uint32_t id, uint8_t len,uint8_t* data)
                         break;
                         
                     case SYS_CMD_CALIBRATE:
-                        Encoder_Calibrate();
+                        calibration_requested = 1;
                         break;
                         
                     case SYS_CMD_DIAGNOSTIC:
-                        System_Diagnostic();
+                        diagnostic_requested = 1;
                         break;
                 }
             }
@@ -573,6 +576,10 @@ void Motor_Test_Suite(void)
     printf("\nMotor test suite completed.\r\n");
 }
 
+
+
+
+
 int main(void) 
 {
 	System_Init();
@@ -605,6 +612,17 @@ int main(void)
         
         // 通信处理
         Communication_Handler();
+		
+		if (diagnostic_requested)
+		{
+			diagnostic_requested = 0;
+			System_Diagnostic();  /* 异步执行 */
+		}
+		if (calibration_requested)
+		{
+			calibration_requested = 0;
+			Encoder_Calibrate();
+		}
 		
 		//状态机
 		switch (system_state)
