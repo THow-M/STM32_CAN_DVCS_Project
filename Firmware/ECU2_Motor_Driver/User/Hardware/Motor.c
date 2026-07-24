@@ -238,6 +238,7 @@ uint8_t Motor_ProtectionCheck(void)
     uint16_t current = Motor_GetCurrent();
     if (current > MOTOR_MAX_CURRENT)
 	{
+		motor_control.protection.over_current = 1;
         errors |= ERROR_OVER_CURRENT;
         motor_control.error_code = ERROR_OVER_CURRENT;
     }
@@ -246,6 +247,7 @@ uint8_t Motor_ProtectionCheck(void)
     static uint32_t stall_start = 0;
     if (motor_control.target_speed > 100 && abs(motor_control.current_speed) < 10)
 	{
+		motor_control.protection.stall = 1;
         if (stall_start == 0)
 			stall_start = HAL_GetTick();
         else if (HAL_GetTick() - stall_start > 2000)
@@ -410,6 +412,7 @@ void Motor_Diagnostic(void)
 /** 函  数：获取电机电流
   * 参  数：无
   * 返回值：fake 电机电流
+  * 注  意：此函数还未实现，返回电流为伪造值
   */
 uint16_t Motor_GetCurrent(void)
 {

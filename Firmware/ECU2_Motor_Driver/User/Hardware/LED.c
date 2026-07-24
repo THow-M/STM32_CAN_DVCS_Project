@@ -18,7 +18,7 @@ void LED_Init(void)
 	GPIO_Init(GPIOC, &GPIO_InitStructure);						//将PA1和PA2引脚初始化为推挽输出
 	
 	/*设置GPIO初始化后的默认电平*/
-	GPIO_SetBits(GPIOA, GPIO_Pin_13);				//设置PA1和PA2引脚为高电平
+	GPIO_SetBits(GPIOC, GPIO_Pin_13);				//设置PA1和PA2引脚为高电平
 }
 
 /**
