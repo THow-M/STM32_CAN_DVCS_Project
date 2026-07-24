@@ -152,6 +152,8 @@ void Control_Loop(void)
 		{  // 10ms控制周期
             last_pid_time = current_time;
             
+			float dt = (float)(current_time - last_pid_time) / 1000.0f;
+			
             // 获取实际速度
             Encoder_Data encoder = Encoder_GetData();
             actual_speed_rpm = encoder.speed_rpm;
