@@ -317,11 +317,10 @@ void Motor_ErrorHandler(uint8_t error_code)
             Motor_SetSpeed(0, MOTOR_STOP);
             break;
         case ERROR_STALL:
-            Motor_SetSpeed(0, MOTOR_STOP);
-            Delay_ms(1000);
-            Motor_SetSpeed(200, motor_control.direction);
-            Delay_ms(500);
-            Motor_SetSpeed(0, MOTOR_STOP);
+            Motor_EmergencyStop();
+			motor_control.state = MOTOR_STATE_ERROR;
+			printf("Motor stall detected. Manual reset required.\r\n");
+			// 不自动恢复，等待 CAN 命令复位
             break;
         default:
             Motor_EmergencyStop();
