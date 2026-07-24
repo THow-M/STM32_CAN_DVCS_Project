@@ -1,5 +1,6 @@
 #include "stm32f10x.h"                  // Device header
 #include "System_Config.h"
+#include "ecu2_main.h"
 #include "MyCAN.h"
 #include "Motor.h"
 #include "PWM.h"
@@ -30,8 +31,6 @@
 #define DIR_GPIO_CLK    RCC_APB2Periph_GPIOB
 
 Motor_Control motor_control = {0};
-static PID_Controller speed_pid;
-static uint8_t control_mode = CONTROL_MODE_MANUAL;
 
 
 /**函  数：电机初始化
