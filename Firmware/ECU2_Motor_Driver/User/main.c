@@ -151,7 +151,8 @@ void Control_Loop(void)
     // 3. PID控制
     if(control_mode == CONTROL_MODE_AUTO && system_state == SYS_RUN)
 	{
-        if(current_time - last_pid_time >= 10)
+		Motor_RunPIDControl();
+        /*if(current_time - last_pid_time >= 10)
 		{  // 10ms控制周期
             last_pid_time = current_time;
             
@@ -185,7 +186,7 @@ void Control_Loop(void)
                 printf("PID: Target=%.1f, Actual=%.1f, Output=%d, Dir=%d\r\n",
                        target_speed_rpm, actual_speed_rpm, speed, motor_direction);
             }
-        }
+        }*/
     }
 }
 
