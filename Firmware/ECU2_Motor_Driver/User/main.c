@@ -236,10 +236,11 @@ void Communication_Handler(void)
             
             // 组合状态位
             uint8_t status_byte = 0;
-            if(motor_status.state == MOTOR_STATE_ERROR) status_byte |= 0x01;
-            if(motor_status.protection_status & 0x01) status_byte |= 0x02;  // 过流
-            if(motor_status.protection_status & 0x02) status_byte |= 0x04;  // 过热
-            if(motor_status.protection_status & 0x04) status_byte |= 0x08;  // 堵转
+            if(motor_status.protection_status & ERROR_OVER_CURRENT) status_byte |= ERROR_OVER_CURRENT;  // 过流
+            if(motor_status.protection_status & ERROR_OVER_TEMP) status_byte |= ERROR_OVER_TEMP;  // 过热
+            if(motor_status.protection_status & ERROR_STALL) status_byte |= ERROR_STALL;  // 堵转
+			if(motor_status.protection_status & ERROR_OVER_SPEED) status_byte |= ERROR_OVER_SPEED;  // 过速
+			if(motor_status.protection_status & ERROR_UNDER_VOLTAGE) status_byte |= ERROR_UNDER_VOLTAGE;  // 低压
             
             MyCAN_Send_MotorStatus((int16_t)encoder.speed_rpm, current, /*temperature,*/ status_byte);
             
@@ -657,10 +658,6 @@ int main(void)
                 system_state = SYS_IDLE;
                 break;
         }
-        
-        // 简单延时
-        Delay_ms(1);
-
 	}
 }
 
