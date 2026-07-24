@@ -101,7 +101,6 @@ float PID_Calculate(PID_Controller* pid, float setpoint, float measurement, floa
     
     // 微分项（不完全微分）
     derivative = pid->kd * (pid->filtered_error - pid->prev_error) / dt;
-    pid->prev_error = pid->filtered_error;
     
     // 计算输出
     pid->output = proportional + integral + derivative;
@@ -115,6 +114,8 @@ float PID_Calculate(PID_Controller* pid, float setpoint, float measurement, floa
 	{
         pid->output = pid->out_min;
     }
+	
+	pid->prev_error = pid->filtered_error;
     
     return pid->output;
 }
