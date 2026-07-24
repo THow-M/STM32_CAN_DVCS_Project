@@ -2,6 +2,7 @@
 #define __ECU2_MAIN_H
 
 #include "PID_Control.h"
+#include <stdint.h>
 
 //--------------------------系统常量-----------------------------
 #define NODE_NUM                  3         //ECU节点总数
@@ -17,10 +18,6 @@ typedef enum
     SYS_ERROR,         // 错误
     SYS_CALIBRATING    // 校准
 } System_State;
-
-// 控制模式定义
-#define CONTROL_MODE_MANUAL  0
-#define CONTROL_MODE_AUTO    1
 
 // 系统命令定义
 #define SYS_CMD_START        1
