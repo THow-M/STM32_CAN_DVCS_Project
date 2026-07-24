@@ -61,5 +61,5 @@ void PWM_SetCompare1(uint16_t Compare)
   */
 uint16_t PWM_GetPeriod(void)
 {
-    return TIM1->ARR;
+    return (uint16_t)(*(volatile uint16_t *)&TIM1->ARR);
 }
