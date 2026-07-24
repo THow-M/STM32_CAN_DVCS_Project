@@ -126,9 +126,18 @@ float Encoder_CalculateSpeed(uint16_t sample_time_ms)
 {
     static uint32_t last_calc_time = 0;
     static int32_t last_total_pulses = 0;
+	static uint8_t first_run = 1;
     
     uint32_t current_time = HAL_GetTick();
     uint32_t elapsed_time = current_time - last_calc_time;
+	
+	if(first_run)
+	{
+		last_calc_time = current_time;
+        last_total_pulses = encoder_total_pulses;
+        first_run = 0;
+        return 0.0f;  // 第一次返回0
+	}
     
     if(elapsed_time < sample_time_ms)
 	{
