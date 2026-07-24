@@ -227,8 +227,16 @@ void Encoder_Calibrate(void)
 uint8_t Encoder_Fault_Check(void)
 {
     static uint32_t last_pulse_time = 0;
+	static uint8_t first_run = 1;
     uint32_t current_time = HAL_GetTick();
     
+	if (first_run)
+    {
+        last_pulse_time = current_time;
+        first_run = 0;
+        return ENCODER_FAULT_NONE;
+    }
+	
     // 检查编码器是否长时间无脉冲
     if(encoder_data.speed_rpm > 10)
 	{  // 电机在运行
