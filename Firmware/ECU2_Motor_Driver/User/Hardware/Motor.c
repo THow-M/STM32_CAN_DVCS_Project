@@ -161,6 +161,8 @@ void Motor_SetTargetSpeed(float speed_rpm, uint8_t direction)
 	else
 	{
         // 自动模式，PID控制
+        Motor_SetSpeed(motor_control.target_speed, direction);
+		
         if (speed_rpm > 0)
 			motor_control.state = MOTOR_STATE_RUN;
         else
