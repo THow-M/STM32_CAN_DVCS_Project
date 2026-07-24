@@ -78,7 +78,7 @@ float PID_Calculate(PID_Controller* pid, float setpoint, float measurement, floa
     proportional = pid->kp * pid->filtered_error;
     
     // 积分项（带抗饱和）
-    pid->integral += error * dt;
+    pid->integral += pid->filtered_error * dt;
     
     // 积分限幅
     if(pid->integral > pid->integral_max)
