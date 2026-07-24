@@ -47,15 +47,15 @@ void PID_Init(PID_Controller* pid, float kp, float ki, float kd,
   */
 float PID_Calculate(PID_Controller* pid, float setpoint, float measurement, float dt)
 {
-	if(dt <= 0.0f)
-	{
-		return pid->output;
-	}
-	
 	if (pid == NULL)
     {
         return 0.0f;
     }
+	
+	if(dt <= 0.0f)
+	{
+		return pid->output;
+	}
 	
     if(!pid->enabled)
 	{
