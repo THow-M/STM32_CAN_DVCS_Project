@@ -27,6 +27,7 @@ static volatile uint8_t measurement_state = 0;
 static volatile uint8_t echo_rising_captured = 0;   /* 上升沿已捕获标志 */
 static volatile uint32_t timeout_counter = 0;
 static volatile uint32_t last_timeout_log_time = 0;   /* 上次超时日志时间 */
+volatile uint8_t ultrasonic_data_ready = 0;
 
 /** 函  数：超声波初始化
   * 参  数：无
@@ -160,10 +161,17 @@ void Ultrasonic_Update(void)
 	static uint32_t trigger_time = 0;
     uint32_t current_time = HAL_GetTick();
     
+	/* 检测数据就绪标志 */
+    if(ultrasonic_data_ready != 0)
+    {
+        ultrasonic_data_ready = 0;          /* 先清标志，防止重复计算 */
+        Ultrasonic_Calculate_Distance();    /* 在主循环上下文执行浮点运算 */
+    }
+	
     // 每100ms测量一次
-    if(current_time - last_measure_time >= 150)
+    if(current_time - last_measure_time >= 100)
 	{
-        if(measurement_state == 0)        /* 新增：测量进行中不触发新测量 */
+        if(measurement_state == 0)        /* 测量进行中不触发新测量 */
         {
             last_measure_time = current_time;
             trigger_time = current_time;
@@ -285,7 +293,14 @@ void Ultrasonic_Diagnostic(void)
     printf("============================\r\n");
 }
 
-// 超声波中断服务函数
+/**
+ * 函  数：超声波定时器中断服务函数
+ * 参  数：无
+ * 返回值：无
+ * 说  明：ISR 仅做捕获时间戳记录和标志设置，
+ *         不调用任何复杂函数（浮点运算/分支判断），
+ *         计算逻辑移至 Ultrasonic_Update() 主循环上下文执行。
+ */
 void TIM4_IRQHandler(void)
 {
     if(TIM_GetITStatus(US_TIM, TIM_IT_CC4) != RESET)
@@ -306,11 +321,12 @@ void TIM4_IRQHandler(void)
                 // 下降沿，记录结束时间
                 echo_end_time = TIM_GetCapture4(US_TIM);
                 echo_received = 1;
+				ultrasonic_data_ready = 1;
                 measurement_state = 0;
 				echo_rising_captured = 0;   /* 新增：清零上升沿捕获标志 */
                 
                 // 计算距离
-                Ultrasonic_Calculate_Distance();
+                //Ultrasonic_Calculate_Distance();
                 
                 // 恢复为上升沿捕获
                 TIM_OC4PolarityConfig(US_TIM, TIM_ICPolarity_Rising);

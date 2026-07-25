@@ -21,5 +21,6 @@ void Ultrasonic_Diagnostic(void);
 void Ultrasonic_Test_All(void);
 // 外部变量声明
 extern Ultrasonic_Data ultrasonic_data;
+extern volatile uint8_t ultrasonic_data_ready;
 
 #endif
