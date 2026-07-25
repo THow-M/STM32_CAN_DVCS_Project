@@ -19,7 +19,7 @@ typedef enum
 // 传感器融合数据结构
 typedef struct
 {
-    uint16_t distance_mm;       // 距离 (mm)
+	uint32_t timestamp;         // 时间戳 (ms)
     float distance_cm;          // 距离 (cm)
     float filtered_distance_cm; // 滤波后的距离
     float roll;                 // 横滚角 (度)
@@ -30,8 +30,9 @@ typedef struct
     float filtered_yaw;         // 滤波后的航向角
     float voltage_v;            // 电压 (V)
     float temperature_c;        // 温度 (°C)
+	uint16_t distance_mm;       // 距离 (mm)
     uint8_t valid;              // 数据是否有效
-    uint32_t timestamp;         // 时间戳 (ms)
+    uint8_t reserved;
 } Sensor_Fusion;
 
 
