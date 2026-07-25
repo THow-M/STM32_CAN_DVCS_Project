@@ -15,7 +15,7 @@
 
 // 全局变量
 System_State system_state = SYS_IDLE;
-uint32_t system_uptime = 0;
+volatile uint32_t system_uptime = 0;
 uint8_t error_code = ERROR_NONE;
 uint8_t can_connected = 0;
 
@@ -27,15 +27,15 @@ uint8_t calibration_complete = 0;
 // 定时器
 uint32_t last_sensor_update = 0;
 uint32_t last_can_send = 0;
-uint32_t last_heartbeat = 0;
-uint32_t last_status_update = 0;
+volatile uint32_t last_heartbeat = 0;
+volatile uint32_t last_status_update = 0;
 uint32_t last_diagnostic = 0;
 uint32_t last_calibration_check = 0;
 
 // CAN接收数据
 SystemCtrl_Data system_ctrl = {0};
-uint8_t heartbeat_status[NODE_NUM] = {0};
-uint32_t heartbeat_time[NODE_NUM] = {0};
+volatile uint8_t heartbeat_status[NODE_NUM] = {0};
+volatile uint32_t heartbeat_time[NODE_NUM] = {0};
 
 /** 函  数：系统初始化
   * 参  数：无

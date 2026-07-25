@@ -79,7 +79,7 @@ void Error_Handler(void);
 
 // 外部变量声明
 extern System_State system_state;
-extern uint32_t system_uptime;
+extern volatile uint32_t system_uptime;
 extern uint8_t error_code;
 extern uint8_t can_connected;
 extern Sensor_Fusion sensor_fusion;
