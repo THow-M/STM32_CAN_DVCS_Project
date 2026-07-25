@@ -16,6 +16,7 @@ void Ultrasonic_Trigger(void);
 uint16_t Ultrasonic_GetDistance(void);
 void Ultrasonic_Update(void);
 void Ultrasonic_Calculate_Distance(void);
+float Ultrasonic_Get_Sound_Speed(void);
 void Ultrasonic_Calibrate(void);
 void Ultrasonic_Diagnostic(void);
 void Ultrasonic_Test_All(void);

@@ -10,7 +10,7 @@
 #define MPU6050_ADDR    0xD0  // 0x68左移一位
 
 // 全局变量
-static MPU6050_Data mpu6050_data = {0};
+MPU6050_Data mpu6050_data = {0};
 static float q0 = 1.0f, q1 = 0.0f, q2 = 0.0f, q3 = 0.0f;  // 四元数
 static float exInt = 0, eyInt = 0, ezInt = 0;             // 误差积分
 static Mahony_Params_t mahony_params = {

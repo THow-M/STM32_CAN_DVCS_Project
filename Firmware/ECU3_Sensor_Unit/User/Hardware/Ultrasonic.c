@@ -2,6 +2,7 @@
 #include "Ultrasonic.h"
 #include "Delay.h"
 #include "Serial.h"
+#include "MPU6050.h"
 
 // 超声波引脚定义
 #define TRIG_PORT       GPIOB
@@ -17,6 +18,10 @@
 #define US_TIM_CLK      RCC_APB1Periph_TIM4
 #define US_TIM_IRQn     TIM4_IRQn
 #define US_TIM_Channel  TIM_Channel_4
+
+/* 声速温度补偿：v = 331.4 + 0.6 * T (m/s) */
+#define SOUND_SPEED_0C      331.4f   /* 0°C 时声速 m/s */
+#define SOUND_SPEED_TEMP_K  0.6f     /* 温度系数 m/(s·°C) */
 
 // 全局变量
 Ultrasonic_Data ultrasonic_data = {0};
@@ -168,8 +173,8 @@ void Ultrasonic_Update(void)
         Ultrasonic_Calculate_Distance();    /* 在主循环上下文执行浮点运算 */
     }
 	
-    // 每100ms测量一次
-    if(current_time - last_measure_time >= 100)
+    // 每150ms测量一次
+    if(current_time - last_measure_time >= 150)
 	{
         if(measurement_state == 0)        /* 测量进行中不触发新测量 */
         {
@@ -194,6 +199,13 @@ void Ultrasonic_Update(void)
 	}
 }
 
+float Ultrasonic_Get_Sound_Speed(void)
+{
+    extern MPU6050_Data mpu6050_data;  /* 或通过函数获取 */
+    float temp = mpu6050_data.temperature_c;
+    return SOUND_SPEED_0C + SOUND_SPEED_TEMP_K * temp;
+}
+
 /** 函  数：计算距离
   * 参  数：无
   * 返回值：无
@@ -201,6 +213,8 @@ void Ultrasonic_Update(void)
 void Ultrasonic_Calculate_Distance(void)
 {
     uint32_t pulse_width;
+	float sound_speed;
+    float distance_m;
     
     if(echo_rising_captured != 0 || echo_end_time == 0 || echo_end_time <= echo_start_time)
     {
@@ -217,11 +231,16 @@ void Ultrasonic_Calculate_Distance(void)
         ultrasonic_data.valid = 0;
         return;
     }
+	
+	/* 温度补偿后的声速 (m/s) */
+    sound_speed = Ultrasonic_Get_Sound_Speed();
     
     // 计算距离
     // 声速: 340m/s = 0.034cm/us
-    // 距离 = 时间 * 声速 / 2 (往返时间)
-    ultrasonic_data.distance_mm = (uint16_t)(pulse_width * 0.17f);  // 单位: mm
+    // 距离 = 时间(us) * 声速(m/s) / 1000000 / 2 * 1000(mm)
+    // 简化：distance_mm = pulse_width * sound_speed / 2000
+    distance_m = (pulse_width * sound_speed) / 2000000.0f;  /* 单位: m */
+    ultrasonic_data.distance_mm = (uint16_t)(distance_m * 1000.0f);  /* 转 mm */
     
     // 转换为cm
     ultrasonic_data.distance_cm = ultrasonic_data.distance_mm / 10.0f;
