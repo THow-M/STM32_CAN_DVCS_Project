@@ -26,7 +26,7 @@ void MyI2C_Init(void)
     
     // 配置PB10(SCL)和PB11(SDA)为开漏输出
     GPIO_InitStructure.GPIO_Pin = I2C_SCL_PIN | I2C_SDA_PIN;
-    GPIO_InitStructure.GPIO_Mode = GPIO_Mode_Out_OD;  // 开漏输出
+    GPIO_InitStructure.GPIO_Mode = GPIO_Mode_Out_OD;  // 软件 I2C 使用 Out_OD，硬件 I2C 需用 AF_OD(引脚也需改变）
     GPIO_InitStructure.GPIO_Speed = GPIO_Speed_50MHz;
     GPIO_Init(I2C_PORT, &GPIO_InitStructure);
     
@@ -292,6 +292,8 @@ uint8_t MyI2C_Read_Byte_From_Reg(uint8_t dev_addr, uint8_t reg_addr, uint8_t *da
   */
 uint8_t MyI2C_Read_Bytes(uint8_t dev_addr, uint8_t reg_addr, uint16_t len, uint8_t *data)
 {
+	if(data == NULL || len == 0) return 4;  /* 参数错误 */
+	
     uint16_t i;
     
     MyI2C_Start();
