@@ -1,6 +1,13 @@
 #ifndef __MPU6050_H
 #define __MPU6050_H
 
+typedef struct
+{
+    float Kp;           /* 比例增益（推荐 0.1~2.0） */
+    float Ki;           /* 积分增益（推荐 0.001~0.1） */
+    float half_Dt;      /* 半周期 */
+} Mahony_Params_t;
+
 // MPU6050数据结构
 typedef struct
 {

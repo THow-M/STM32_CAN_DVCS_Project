@@ -13,6 +13,11 @@
 MPU6050_Data mpu6050_data = {0};
 static float q0 = 1.0f, q1 = 0.0f, q2 = 0.0f, q3 = 0.0f;  // 四元数
 static float exInt = 0, eyInt = 0, ezInt = 0;             // 误差积分
+static Mahony_Params_t mahony_params = {
+    .Kp = 0.1f,
+    .Ki = 0.01f,
+    .half_Dt = 0.0f
+};
 
 /** 函  数：MPU6050初始化
   * 参  数：无
@@ -263,9 +268,9 @@ void MPU6050_Calculate_Attitude(float dt)
     ezInt += ez * 0.5f * dt;
     
     // 修正陀螺仪数据
-    mpu6050_data.gyro_x_dps += 0.1f * ex + 0.01f * exInt;
-    mpu6050_data.gyro_y_dps += 0.1f * ey + 0.01f * eyInt;
-    mpu6050_data.gyro_z_dps += 0.1f * ez + 0.01f * ezInt;
+    mpu6050_data.gyro_x_dps += mahony_params.Kp * ex + mahony_params.Ki * exInt;
+    mpu6050_data.gyro_y_dps += mahony_params.Kp * ey + mahony_params.Ki * eyInt;
+    mpu6050_data.gyro_z_dps += mahony_params.Kp * ez + mahony_params.Ki * ezInt;
     
     // 转换为弧度/秒
     float gx = mpu6050_data.gyro_x_dps * 0.0174533f;  // 度/秒 -> 弧度/秒
