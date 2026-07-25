@@ -162,8 +162,8 @@ uint16_t Ultrasonic_GetDistance(void)
   */
 void Ultrasonic_Update(void)
 {
-    static uint32_t last_measure_time = 0;
-	static uint32_t trigger_time = 0;
+    static volatile uint32_t last_measure_time = 0;
+	static volatile uint32_t trigger_time = 0;
     uint32_t current_time = HAL_GetTick();
     
 	/* 检测数据就绪标志 */
