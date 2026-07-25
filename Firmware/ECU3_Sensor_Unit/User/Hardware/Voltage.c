@@ -77,7 +77,15 @@ uint16_t Voltage_Read_ADC(void)
     ADC_SoftwareStartConvCmd(ADC1, ENABLE);
     
     // 等待转换完成
-    while(!ADC_GetFlagStatus(ADC1, ADC_FLAG_EOC));
+    uint32_t start = HAL_GetTick();
+    while(!ADC_GetFlagStatus(ADC1, ADC_FLAG_EOC))
+    {
+        if(HAL_GetTick() - start > 10)
+        {
+            printf("ADC timeout!\r\n");
+            return 0;  /* 返回 0 表示失败 */
+        }
+    }
     
     // 读取转换值
     return ADC_GetConversionValue(ADC1);
