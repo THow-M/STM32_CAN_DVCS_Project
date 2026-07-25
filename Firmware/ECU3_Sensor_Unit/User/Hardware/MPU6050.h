@@ -1,6 +1,9 @@
 #ifndef __MPU6050_H
 #define __MPU6050_H
 
+#define GYRO_CONFIG_2000DPS     0x18    /* ±2000°/s 量程 */
+#define ACCEL_CONFIG_8G         0x10    /* ±8g 量程 */
+
 typedef struct
 {
     float Kp;           /* 比例增益（推荐 0.1~2.0） */

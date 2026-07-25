@@ -10,7 +10,7 @@
 #define MPU6050_ADDR    0xD0  // 0x68左移一位
 
 // 全局变量
-MPU6050_Data mpu6050_data = {0};
+static MPU6050_Data mpu6050_data = {0};
 static float q0 = 1.0f, q1 = 0.0f, q2 = 0.0f, q3 = 0.0f;  // 四元数
 static float exInt = 0, eyInt = 0, ezInt = 0;             // 误差积分
 static Mahony_Params_t mahony_params = {
@@ -72,14 +72,14 @@ uint8_t MPU6050_Init(void)
     }
     
     // 设置陀螺仪量程
-    if(MyI2C_Write_Byte(MPU6050_ADDR, GYRO_CONFIG, 0x18))
+    if(MyI2C_Write_Byte(MPU6050_ADDR, GYRO_CONFIG, GYRO_CONFIG_2000DPS))
 	{  // ±2000°/s
         printf("MPU6050: Failed to set gyro range\r\n");
         return 0;
     }
     
     // 设置加速度计量程
-    if(MyI2C_Write_Byte(MPU6050_ADDR, ACCEL_CONFIG, 0x10))
+    if(MyI2C_Write_Byte(MPU6050_ADDR, ACCEL_CONFIG, ACCEL_CONFIG_8G))
 	{  // ±8g
         printf("MPU6050: Failed to set accelerometer range\r\n");
         return 0;
@@ -153,7 +153,7 @@ void MPU6050_Calibrate(void)
     
     int32_t accel_sum_x = 0, accel_sum_y = 0, accel_sum_z = 0;
     int32_t gyro_sum_x = 0, gyro_sum_y = 0, gyro_sum_z = 0;
-    uint16_t sample_count = 200;
+    uint16_t sample_count = 100;
     
     for(uint16_t i = 0; i < sample_count; i++)
 	{
