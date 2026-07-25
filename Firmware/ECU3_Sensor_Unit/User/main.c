@@ -43,12 +43,11 @@ volatile uint32_t heartbeat_time[NODE_NUM] = {0};
   */
 void System_Init(void)
 {
-	NVIC_PriorityGroupConfig(NVIC_PriorityGroup_2);
-	
-	// 初始化定时器2
-	Timer_Init();
-	
-    // 初始化串口
+	/* 1. 全局 NVIC 优先级分组（仅此一次） */
+    NVIC_PriorityGroupConfig(NVIC_PriorityGroup_2);
+    
+    /* 2. 基础设施 */
+    Timer_Init();
     Serial_Init(DEBUG_BAUDRATE);
     
     printf("\r\n\r\n");
