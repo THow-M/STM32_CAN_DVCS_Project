@@ -156,7 +156,7 @@ void Sensor_Self_Test(void)
 	else
 	{
         printf("FAIL\r\n");
-        error_code |= ERROR_MPU6050_SELFTEST;
+        error_code |= ERROR_MPU6050_FAIL;
     }
     
     // 超声波自检
@@ -184,7 +184,7 @@ void Sensor_Self_Test(void)
 	else
 	{
         printf("FAIL (Voltage: %.2fV)\r\n", volt.voltage_v);
-        error_code |= ERROR_VOLTAGE_FAIL;
+        error_code |= ERROR_VOLTAGE_LOW;
     }
     
     printf("=======================\r\n");
@@ -893,11 +893,11 @@ void Error_Handler(void)
             error_code &= ~ERROR_ULTRASONIC_FAIL;
         }
         
-        if(error_code & ERROR_VOLTAGE_FAIL)
+        if(error_code & ERROR_VOLTAGE_LOW)
 		{
             printf("Reinitializing Voltage detection...\r\n");
             Voltage_Init();
-            error_code &= ~ERROR_VOLTAGE_FAIL;
+            error_code &= ~ERROR_VOLTAGE_LOW;
         }
         
         // 如果所有错误都清除，恢复系统

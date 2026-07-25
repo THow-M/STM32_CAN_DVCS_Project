@@ -674,34 +674,57 @@ void CAN_Data_Handler(uint32_t id, uint8_t len, uint8_t* data)
 			printf("Error Report from Node %d: type=0x%02X, code=0x%04X, time=%u\r\n",
 					err->node_id, err->error_type, err->error_code, err->timestamp);
 			
-			switch(err->error_type)
+			if(err->error_type == ERROR_NONE)
 			{
-				case ERROR_NONE:
-					printf("No Error on node %d\r\n",err->node_id);
-					break;
-				case ERROR_CAN_COMM:
-					printf("CAN communication error on node %d\r\n",err->node_id);
-					break;
-				case ERROR_MOTOR_OVERHEAT:
-					printf("Motor overheat on node %d\r\n",err->node_id);
-					break;
-				case ERROR_SENSOR_FAIL:
-					printf("Sensor failure on node %d\r\n",err->node_id);
-					break;
-				case ERROR_VOLTAGE_LOW:
-					printf("Voltage low on node %d\r\n",err->node_id);
-					break;
-				case ERROR_ENCODER_FAIL:
-					printf("Encoder failure on node %d\r\n",err->node_id);
-					break;
-				default:
-					printf("Unknown error type\r\n");
-					break;
+				printf("No Error on node %d\r\n", err->node_id);
+			}
+			else
+			{
+				if(err->error_type & ERROR_CAN_COMM)
+				{
+					printf("CAN communication error on node %d\r\n", err->node_id);
+				}
+				if(err->error_type & ERROR_VOLTAGE_LOW)
+				{
+					printf("Voltage low on node %d\r\n", err->node_id);
+				}
+				if(err->error_type & ERROR_MPU6050_FAIL)
+				{
+					printf("MPU6050 failure on node %d\r\n", err->node_id);
+				}
+				if(err->error_type & ERROR_ULTRASONIC_FAIL)
+				{
+					printf("Ultrasonic failure on node %d\r\n", err->node_id);
+				}
+				if(err->error_type & ERROR_MOTOR_FAULT)
+				{
+					printf("Motor fault on node %d\r\n", err->node_id);
+				}
+				if(err->error_type & ERROR_SENSOR_FUSION)
+				{
+					printf("Sensor fusion error on node %d\r\n", err->node_id);
+				}
+				if(err->error_type & ERROR_OVERCURRENT)
+				{
+					printf("Overcurrent on node %d\r\n", err->node_id);
+				}
+				if(err->error_type & ERROR_WATCHDOG)
+				{
+					printf("Watchdog reset on node %d\r\n", err->node_id);
+				}
+				if(err->error_type & ~(ERROR_CAN_COMM | ERROR_VOLTAGE_LOW |
+									ERROR_MPU6050_FAIL | ERROR_ULTRASONIC_FAIL |
+									ERROR_MOTOR_FAULT | ERROR_SENSOR_FUSION |
+									ERROR_OVERCURRENT | ERROR_WATCHDOG))
+				{
+					printf("Unknown error type 0x%02X on node %d\r\n",
+						err->error_type, err->node_id);
+				}
 			}
 			break;
 		}
             
-        default:
+		default:
 		{	// 未知报文处理
 			uint8_t print_len = (len > 8) ? 8 : len;
 			printf("Unknown CAN message: ID=0x%03x, Len=%d, Data=",id,len);
