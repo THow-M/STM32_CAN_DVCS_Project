@@ -191,6 +191,27 @@ void Sensor_Self_Test(void)
     printf("=======================\r\n");
 }
 
+/**
+ * 函  数：所有传感器非阻塞式更新
+ * 参  数：无
+ * 返回值：无
+ * 说  明：每个主循环都调用，负责触发/检查各传感器数据采集
+ *         - MPU6050：I2C 读取姿态数据（当前阻塞 ~5ms，未来可改 DMA）
+ *         - 超声波：触发+回波检测（内部含 150ms 节流，非阻塞）
+ *         - 电压  ：ADC 单次转换（~0.3ms，可接受）
+ */
+void Sensor_Update_All(void)
+{
+    /* 1. 更新 MPU6050（当前阻塞式读取约 5ms，可改为 DMA+中断） */
+    MPU6050_Read_RawData();
+ 
+    /* 2. 更新超声波（内部含节流，触发后立即返回，非阻塞） */
+    Ultrasonic_Update();
+ 
+    /* 3. 更新电压（ADC 单次转换约 0.3ms，可接受） */
+    Voltage_Update();
+}
+
 /** 函  数：传感器融合初始化
   * 参  数：无
   * 返回值：无
@@ -221,21 +242,22 @@ void Sensor_Fusion_Process(void)
     uint32_t current_time = HAL_GetTick();
     float dt = (current_time - last_fusion_time) / 1000.0f;  // 转换为秒
     
-    if(dt < 0.01f)
-	{  // 至少10ms
+    if(dt < 0.02f)
+	{  // 至少20ms
         return;
     }
     
     // 1. 更新MPU6050姿态
-    MPU6050_Calculate_Attitude(dt);
     MPU6050_Data mpu = MPU6050_GetData();
     
     // 2. 更新超声波
-    Ultrasonic_Update();
+    //Ultrasonic_Update();
     
     // 3. 更新电压
-    Voltage_Update();
     Voltage_Data volt = Voltage_GetData();
+	
+	// 姿态解算（基于已读取的原始数据，不触发 I2C）
+    MPU6050_Calculate_Attitude(dt);
     
     // 4. 融合数据
     sensor_fusion.distance_mm = ultrasonic_data.distance_mm;
@@ -444,6 +466,12 @@ void Control_Loop(void)
 {
     uint32_t current_time = HAL_GetTick();
     
+	//传感器数据采集更新
+	if(system_state == SYS_RUN || system_state == SYS_READY)
+    {
+        Sensor_Update_All();
+    }
+	
     // 1. 传感器融合处理
     if(system_state == SYS_RUN || system_state == SYS_READY)
 	{

@@ -66,6 +66,7 @@ typedef struct
 // 函数声明
 void System_Init(void);
 void Sensor_Self_Test(void);
+void Sensor_Update_All(void);
 void Sensor_Fusion_Init(void);
 void Sensor_Fusion_Process(void);
 void Sensor_Anomaly_Detection(void);
