@@ -84,6 +84,16 @@ uint8_t MPU6050_Init(void)
         printf("MPU6050: Failed to set accelerometer range\r\n");
         return 0;
     }
+	
+	/* 新增：等待传感器数据稳定（数据手册要求 >= 30ms） */
+    Delay_ms(100);
+	
+	/* 新增：先丢弃前 10 次采样（瞬态数据） */
+    for(uint8_t i = 0; i < 10; i++)
+    {
+        MPU6050_Read_RawData();
+        Delay_ms(10);
+    }
     
     // 校准传感器
     MPU6050_Calibrate();
