@@ -259,7 +259,8 @@ uint8_t Motor_ProtectionCheck(void)
 	
     // 堵转
     static uint32_t stall_start = 0;
-    if (motor_control.target_speed > 100 && abs(motor_control.current_speed) < 10)
+	float actual_speed = Motor_GetSpeed();
+    if (motor_control.target_speed > 100 && fabs(actual_speed) < 10)
 	{
 		motor_control.protection.stall = 1;
         if (stall_start == 0)
