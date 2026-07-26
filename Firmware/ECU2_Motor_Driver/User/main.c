@@ -339,8 +339,7 @@ void MyCAN_Data_Handler(uint32_t id, uint8_t len,uint8_t* data)
                         }
 						else
 						{
-                            int16_t speed = target_speed_rpm / 10;  // 转换为0-1000范围
-                            Motor_SetTargetSpeed(speed, motor_direction);
+                            Motor_SetTargetSpeed(target_speed_rpm, motor_direction);
                             system_state = SYS_RUN;
                         }
                     }
