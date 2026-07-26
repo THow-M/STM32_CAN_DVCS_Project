@@ -178,24 +178,13 @@ void Motor_SetTargetSpeed(float speed_rpm, uint8_t direction)
   */
 void Motor_EmergencyStop(void)
 {
-	static uint32_t current = 0;
-	static uint32_t last = 0;
-	
     // 刹车
     GPIO_SetBits(DIR_PORT, DIR_PIN_IN1 | DIR_PIN_IN2);
     PWM_SetCompare1(0);
     Delay_ms(100);
-	if(current - last <= 50)
-	{
-		current = HAL_GetTick();
-		last = current;
-	}
-	current = HAL_GetTick();
-	if(current - last >= 100)
-	{
-		last = current;
-		GPIO_ResetBits(DIR_PORT, DIR_PIN_IN1 | DIR_PIN_IN2);
-	}
+	
+	// 释放刹车，进入滑行停止状态
+    GPIO_ResetBits(DIR_PORT, DIR_PIN_IN1 | DIR_PIN_IN2);
     
     PID_Reset(&speed_pid);
     motor_control.target_speed = 0;
