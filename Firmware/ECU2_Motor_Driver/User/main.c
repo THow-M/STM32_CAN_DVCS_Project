@@ -676,9 +676,15 @@ void Error_Handler(void)
     // LED快速闪烁表示错误
     static uint32_t last_blink = 0;
     if(current_time - last_blink > 100)
-		LED_ON();
-	else
-		LED_OFF();
+	{
+		last_blink = current_time;  // 必须更新时间戳
+		static uint8_t led_state = 0;
+		led_state = !led_state;
+		if(led_state)
+			LED_ON();
+		else
+			LED_OFF();
+	}
     
     // 尝试自动恢复
     if(current_time - error_start_time > 5000)
