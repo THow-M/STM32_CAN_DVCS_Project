@@ -215,12 +215,17 @@ void Motor_RunPIDControl(void)
     if (motor_control.direction == MOTOR_REVERSE)
 		corrected_target = -corrected_target;
 
-    float output = PID_Calculate(&speed_pid, corrected_target, enc.speed_rpm, 0.01f);
-    int16_t pwm = (int16_t)fabs(output);
-    if (pwm > 1000) pwm = 1000;
-
-    uint8_t dir = (output >= 0) ? MOTOR_FORWARD : MOTOR_REVERSE;
-    Motor_SetSpeed(pwm, dir);
+    float output = PID_Calculate(&speed_pid,
+                              fabsf(corrected_target),
+                              fabsf(enc.speed_rpm),
+                              0.01f);
+	int16_t pwm = (int16_t)fabsf(output);
+	if (pwm > 1000) pwm = 1000;
+	if (pwm < 0) pwm = 0;
+	
+	// 方向始终跟随目标方向，不随 PID 输出符号改变
+	uint8_t dir = motor_control.direction;
+	Motor_SetSpeed(pwm, dir);
 
     static uint32_t debug = 0;
     if (now - debug > 500)
