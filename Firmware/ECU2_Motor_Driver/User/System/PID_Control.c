@@ -105,7 +105,7 @@ float PID_Calculate(PID_Controller* pid, float setpoint, float measurement, floa
     // 计算输出
     pid->output = proportional + integral + derivative;
     
-	float output_saturated = pid->output;
+	float output_unclamped = pid->output;
 	
     // 输出限幅
     if(pid->output > pid->out_max)
@@ -117,14 +117,14 @@ float PID_Calculate(PID_Controller* pid, float setpoint, float measurement, floa
         pid->output = pid->out_min;
     }
 	
-	// 反向计算抗饱和
-	if (pid->output != output_saturated)
+	// 反向计算抗饱和：当发生饱和时，将积分修正为使输出刚好到达限幅边界的值
+	if (pid->output != output_unclamped)
 	{
-		// 输出被限幅了，计算偏差并从积分中扣除
-		float saturation_error = output_saturated - (proportional + derivative);
-		if (pid->ki != 0)
+		// 目标：proportional + ki * new_integral + derivative = 限幅值
+		// => new_integral = (限幅值 - proportional - derivative) / ki
+		if (pid->ki != 0.0f)
 		{
-			pid->integral = saturation_error / pid->ki;
+			pid->integral = (pid->output - proportional - derivative) / pid->ki;
 		}
 	}
 	
