@@ -232,15 +232,15 @@ void MPU6050_Apply_Calibration(void)
   */
 void MPU6050_Calculate_Attitude(float dt)
 {
-    static uint32_t last_time = 0;
+    static uint8_t first_run = 1;
     float norm;
     float vx, vy, vz;
     float ex, ey, ez;
     float halfT = dt / 2.0f;
     
-    if(last_time == 0)
+    if(first_run)
 	{
-        last_time = HAL_GetTick();
+        first_run = 0;
         return;
     }
     
@@ -317,8 +317,6 @@ void MPU6050_Calculate_Attitude(float dt)
     // 保持yaw在0-360度
     if(mpu6050_data.yaw < 0) mpu6050_data.yaw += 360.0f;
     if(mpu6050_data.yaw > 360.0f) mpu6050_data.yaw -= 360.0f;
-    
-    last_time = HAL_GetTick();
 }
 
 /** 函  数：获取MPU6050数据

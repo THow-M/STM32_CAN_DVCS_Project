@@ -239,11 +239,20 @@ void Sensor_Fusion_Process(void)
 {
     static uint32_t last_fusion_time = 0;
     uint32_t current_time = HAL_GetTick();
-    float dt = (current_time - last_fusion_time) / 1000.0f;  // 转换为秒
-    
-    if(dt < 0.02f)
-	{  // 至少20ms
+	
+	uint32_t elapsed = current_time - last_fusion_time;  // 模运算自动处理溢出
+    if (elapsed < 20)
+	{  // 至少 20ms
         return;
+    }
+	
+    float dt = (float)elapsed / 1000.0f;  // 转换为秒
+    // 限制最大 dt，防止长时间阻塞导致积分爆炸
+    if (dt > 0.1f)
+	{  // 最大 100ms
+        dt = 0.1f;
+        // 可选：记录异常，用于诊断
+        // printf("Warning: sensor fusion dt clamped to %.3f\r\n", dt);
     }
     
     // 1. 更新MPU6050姿态
