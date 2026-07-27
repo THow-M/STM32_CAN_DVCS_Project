@@ -352,9 +352,9 @@ void MPU6050_Temperature_Compensation(void)
     // 温度变化对陀螺仪的影响
     float temp_factor = 1.0f + (avg_temp - 25.0f) * 0.001f;  // 0.1%/°C
     
-    mpu6050_data.gyro_x *= temp_factor;
-    mpu6050_data.gyro_y *= temp_factor;
-    mpu6050_data.gyro_z *= temp_factor;
+    mpu6050_data.gyro_x_dps = (mpu6050_data.gyro_x / 16.4f) * temp_factor;
+    mpu6050_data.gyro_y_dps = (mpu6050_data.gyro_y / 16.4f) * temp_factor;
+    mpu6050_data.gyro_z_dps = (mpu6050_data.gyro_z / 16.4f) * temp_factor;
 }
 
 /** 函  数：自检
