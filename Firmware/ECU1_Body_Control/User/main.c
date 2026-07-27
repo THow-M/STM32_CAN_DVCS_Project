@@ -831,7 +831,7 @@ void Error_Handler(void)
         //LED4_Turn();
     }
 	
-	ErrorReport_Data error;
+	ErrorReport_Data error = {0};
     
     // 尝试恢复
     static uint32_t error_start = 0;
@@ -853,6 +853,7 @@ void Error_Handler(void)
 	if (error.error_code == ERROR_NONE)
     {
         error_active = 0;
+		error_start = 0;
     }
 }
 
