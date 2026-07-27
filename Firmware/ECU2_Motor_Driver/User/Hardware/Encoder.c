@@ -84,7 +84,7 @@ void Encoder_Init(void)
 int32_t Encoder_GetCount(void)
 {
     int32_t count = TIM_GetCounter(ENCODER_TIM);
-    int32_t diff = 0;
+    int32_t diff = count - encoder_last_count;
     
     // 处理溢出
     if(count >= encoder_last_count)
@@ -102,6 +102,8 @@ int32_t Encoder_GetCount(void)
         // 反转
         diff = diff - 65536;
     }
+	else if(diff < -32768)
+		diff += 65536;
     
     encoder_total_pulses += diff;
     encoder_last_count = count;
