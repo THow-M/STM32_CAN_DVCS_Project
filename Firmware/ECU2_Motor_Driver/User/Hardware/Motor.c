@@ -276,6 +276,7 @@ uint8_t Motor_ProtectionCheck(void)
         errors |= ERROR_OVER_SPEED;
         motor_control.error_code = ERROR_OVER_SPEED;
     }
+	
     if (errors)
 	{
         motor_control.error_count++;
@@ -284,9 +285,23 @@ uint8_t Motor_ProtectionCheck(void)
     }
 	else
 	{
-        motor_control.error_count = 0;
-        motor_control.error_code = 0;
-    }
+		if (motor_control.error_count > 0)
+		{
+			motor_control.error_count--;
+		}
+		if (motor_control.error_count == 0)
+		{
+			motor_control.error_code = 0;
+			if (motor_control.target_speed > 0)
+			{
+				motor_control.state = MOTOR_STATE_RUN;
+			}
+			else
+			{
+				motor_control.state = MOTOR_STATE_IDLE;
+			}
+		}
+	}
     return errors;
 }
 
