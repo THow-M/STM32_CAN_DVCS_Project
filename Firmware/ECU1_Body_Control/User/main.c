@@ -49,9 +49,9 @@ void System_Init(void)
 	NVIC_PriorityGroupConfig(NVIC_PriorityGroup_2);
 	
     // 初始化外设
+	Key_Init();
 	Timer_Init();
     LED_Init();
-    Key_Init();
     OLED_Init();
 	OLED2_Init();
     Serial_Init(DEBUG_BAUDRATE);
@@ -808,7 +808,7 @@ int main(void)
         uint8_t can_data[8];
         uint8_t can_len;
         
-        if(MyCAN_Receive_Message(&can_id, &can_len, can_data))
+        while(MyCAN_Receive_Message(&can_id, &can_len, can_data))
 		{
             CAN_Data_Handler(can_id, can_len, can_data);
         }
