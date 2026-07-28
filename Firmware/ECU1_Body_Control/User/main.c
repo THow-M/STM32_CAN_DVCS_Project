@@ -202,6 +202,9 @@ void Remote_Control_Mode(void)
 {
     uint8_t speed = 0;
     uint8_t direction = 1;  // 1=正转
+	static uint8_t direction_switching = 0U;
+	static uint8_t pending_direction = 0U;
+	static uint32_t switch_start = 0U;
     
     system_state = REMOTE_CONTROL;
     
@@ -226,10 +229,24 @@ void Remote_Control_Mode(void)
 		{   // 减速
             if(speed > 0) speed -= 10;
         }
-		else if(key == KEY3_PRESS)
-		{   // 切换方向
-            direction = (direction == 1) ? 2 : 1;
-        }
+		else if (key == KEY3_PRESS && !direction_switching)
+		{
+			direction_switching = 1U;
+			pending_direction = (direction == 1) ? 2 : 1;
+			switch_start = HAL_GetTick();
+			/* 立即发送停止指令 */
+			MyCAN_Send_SpeedCmd(0, 0, 100);
+		}
+		
+		if (direction_switching)
+		{
+			/* 200ms 静止期后再切换方向 */
+			if (HAL_GetTick() - switch_start > 200U)
+			{
+				direction = pending_direction;
+				direction_switching = 0U;
+			}
+		}
         
         // 发送速度指令
         if(HAL_GetTick() - last_can_send_time > 100)
