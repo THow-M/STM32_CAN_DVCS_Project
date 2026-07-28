@@ -168,14 +168,14 @@ uint8_t MyCAN_Receive_Message(uint32_t* ID, uint8_t* Len, uint8_t* Data)
     {
         return 0;
     }
-    
+    // 临界区：防止 ISR 在读取过程中修改
+    __disable_irq();
+	
     if (can_rx_buf.count == 0)
     {
         return 0;
     }
     
-    // 临界区：防止 ISR 在读取过程中修改
-    __disable_irq();
     *ID = can_rx_buf.msg[can_rx_buf.tail].StdId;
     *Len = can_rx_buf.msg[can_rx_buf.tail].DLC;
     for (i = 0; i < *Len; i++)
