@@ -41,7 +41,7 @@ void Serial_Init(uint32_t baudrate)
 	USART_ITConfig(USART1, USART_IT_RXNE, ENABLE);
 	
 	/*NVIC中断分组*/
-	NVIC_PriorityGroupConfig(NVIC_PriorityGroup_2);
+	//NVIC_PriorityGroupConfig(NVIC_PriorityGroup_2);
 	
 	/*NVIC配置*/
 	NVIC_InitTypeDef NVIC_InitStructure;
