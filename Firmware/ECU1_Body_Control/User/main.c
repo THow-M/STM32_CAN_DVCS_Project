@@ -652,6 +652,12 @@ void CAN_Data_Handler(uint32_t id, uint8_t len, uint8_t* data)
             
         case MSG_ID_MOTOR_STATUS:
 		{
+			if (len != sizeof(MotorStatus_Data))
+			{
+				printf("MotorStatus len err: %u\r\n", len);
+				break;
+			}
+			
             memcpy(&motor_status, data, sizeof(MotorStatus_Data));
             
             // 如果电机状态异常，报警
