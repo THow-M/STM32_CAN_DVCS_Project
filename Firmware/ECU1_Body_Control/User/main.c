@@ -18,6 +18,10 @@ uint32_t last_heartbeat_time = 0;
 uint32_t last_display_time = 0;
 uint32_t last_can_send_time = 0;
 
+/* ---- 错误处理静态变量 ---- */
+static ErrorReport_Data s_last_error = {0};    /* 最近一次收到的错误报告 */
+static uint8_t s_error_pending = 0U;           /* 是否有待处理的错误 */
+
 // CAN接收数据
 SpeedCmd_Data speed_cmd = {0};
 MotorStatus_Data motor_status = {0};
@@ -669,56 +673,76 @@ void CAN_Data_Handler(uint32_t id, uint8_t len, uint8_t* data)
 		
 		case MSG_ID_ERROR_REPORT:
 		{
-			ErrorReport_Data *err = (ErrorReport_Data*)data;
+			/* NULL 指针校验 */
+			if (data == NULL || len < sizeof(ErrorReport_Data))
+			{
+				printf("ErrorReport: invalid data or len=%u\r\n", len);
+				break;
+			}
+		
+			/* 使用 memcpy 替代强制类型转换，符合 MISRA C Rule 11.3 */
+			ErrorReport_Data err;
+			memcpy(&err, data, sizeof(ErrorReport_Data));
+		
+			/* 存储到文件作用域变量，供 Error_Handler 使用 */
+			s_last_error = err;
+			s_error_pending = 1U;
 			//打印错误报告
 			printf("Error Report from Node %d: type=0x%02X, code=0x%04X, time=%u\r\n",
-					err->node_id, err->error_type, err->error_code, err->timestamp);
+					err.node_id, err.error_type, err.error_code, err.timestamp);
 			
-			if(err->error_type == ERROR_NONE)
+			if(err.error_type == ERROR_NONE)
 			{
-				printf("No Error on node %d\r\n", err->node_id);
+				printf("No Error on node %d\r\n", err.node_id);
 			}
 			else
 			{
-				if(err->error_type & ERROR_CAN_COMM)
+				if(err.error_type & ERROR_CAN_COMM)
 				{
-					printf("CAN communication error on node %d\r\n", err->node_id);
+					printf("CAN communication error on node %d\r\n", err.node_id);
 				}
-				if(err->error_type & ERROR_VOLTAGE_LOW)
+				if(err.error_type & ERROR_VOLTAGE_LOW)
 				{
-					printf("Voltage low on node %d\r\n", err->node_id);
+					printf("Voltage low on node %d\r\n", err.node_id);
 				}
-				if(err->error_type & ERROR_MPU6050_FAIL)
+				if(err.error_type & ERROR_MPU6050_FAIL)
 				{
-					printf("MPU6050 failure on node %d\r\n", err->node_id);
+					printf("MPU6050 failure on node %d\r\n", err.node_id);
 				}
-				if(err->error_type & ERROR_ULTRASONIC_FAIL)
+				if(err.error_type & ERROR_ULTRASONIC_FAIL)
 				{
-					printf("Ultrasonic failure on node %d\r\n", err->node_id);
+					printf("Ultrasonic failure on node %d\r\n", err.node_id);
 				}
-				if(err->error_type & ERROR_MOTOR_FAULT)
+				if(err.error_type & ERROR_MOTOR_FAULT)
 				{
-					printf("Motor fault on node %d\r\n", err->node_id);
+					printf("Motor fault on node %d\r\n", err.node_id);
 				}
-				if(err->error_type & ERROR_SENSOR_FUSION)
+				if(err.error_type & ERROR_SENSOR_FUSION)
 				{
-					printf("Sensor fusion error on node %d\r\n", err->node_id);
+					printf("Sensor fusion error on node %d\r\n", err.node_id);
 				}
-				if(err->error_type & ERROR_OVERCURRENT)
+				if(err.error_type & ERROR_OVERCURRENT)
 				{
-					printf("Overcurrent on node %d\r\n", err->node_id);
+					printf("Overcurrent on node %d\r\n", err.node_id);
 				}
-				if(err->error_type & ERROR_WATCHDOG)
+				if(err.error_type & ERROR_WATCHDOG)
 				{
-					printf("Watchdog reset on node %d\r\n", err->node_id);
+					printf("Watchdog reset on node %d\r\n", err.node_id);
 				}
-				if(err->error_type & ~(ERROR_CAN_COMM | ERROR_VOLTAGE_LOW |
+				/* 检查未知错误位 */
+				if(err.error_type & ~(ERROR_CAN_COMM | ERROR_VOLTAGE_LOW |
 									ERROR_MPU6050_FAIL | ERROR_ULTRASONIC_FAIL |
 									ERROR_MOTOR_FAULT | ERROR_SENSOR_FUSION |
 									ERROR_OVERCURRENT | ERROR_WATCHDOG))
 				{
 					printf("Unknown error type 0x%02X on node %d\r\n",
-						err->error_type, err->node_id);
+						err.error_type, err.node_id);
+				}
+				/* ---- 触发安全机制：严重错误进入 SYSTEM_ERROR ---- */
+				if (err.error_type & (ERROR_MOTOR_FAULT | ERROR_OVERCURRENT | ERROR_WATCHDOG))
+				{
+					printf("CRITICAL FAULT: Entering SYSTEM_ERROR state\r\n");
+					system_state = SYSTEM_ERROR;
 				}
 			}
 			break;
@@ -813,47 +837,48 @@ int main(void)
     }
 }
 
-/** 函  数：错误处理
-  * 参  数：id 要处理的数据
-  * 返回值：无
+/**
+  * 函    数：错误处理
+  * 参    数：无
+  * 返 回 值：无
+  * 说    明：基于 s_last_error / s_error_pending 状态机实现
+  *           1. 接收 CAN 错误报告时由 CAN_Data_Handler 设置 s_error_pending=1
+  *           2. 首次进入错误态时记录起始时间并打印错误详情
+  *           3. 5 秒超时后触发系统复位
   */
 void Error_Handler(void)
 {
-    // LED快速闪烁表示错误
-    static uint32_t last_blink = 0;
-    
-    if(HAL_GetTick() - last_blink > 100)
-	{
+    /* LED 快闪（100ms 周期）表示错误 */
+    static uint32_t last_blink = 0U;
+    if (HAL_GetTick() - last_blink > 100U)
+    {
         last_blink = HAL_GetTick();
         LED1_Turn();
         LED2_Turn();
         LED3_Turn();
-        //LED4_Turn();
     }
-	
-	ErrorReport_Data error = {0};
-    
-    // 尝试恢复
-    static uint32_t error_start = 0;
-	static uint8_t error_active = 0;
-    if (!error_active)
+
+    /* 错误恢复状态变量（static，函数退出后保持） */
+    static uint32_t error_start = 0U;
+    static uint8_t  error_active = 0U;
+
+    /* 收到新错误时，记录起始时间并打印 */
+    if (s_error_pending && !error_active)
     {
-        error_start = HAL_GetTick();
-        error_active = 1;
-        printf("Error: 0x%02X at %du ms\r\n", error.error_code, error_start);
+        error_start  = HAL_GetTick();
+        error_active = 1U;
+        printf("=== ERROR HANDLER ACTIVATED ===\r\n");
+        printf("Source: Node %d, Type: 0x%02X, Code: 0x%04X\r\n",
+               s_last_error.node_id, s_last_error.error_type, s_last_error.error_code);
+        printf("Time: %u ms\r\n", s_last_error.timestamp);
     }
-    
-    // 5秒后尝试重启
-    if(HAL_GetTick() - error_start > 5000)
-	{
-        printf("System reset after error...\r\n");
+
+    /* 5 秒超时后触发系统复位 */
+    if (error_active && (HAL_GetTick() - error_start > 5000U))
+    {
+        printf("System reset after error timeout (5s)...\r\n");
         NVIC_SystemReset();
-    }
-	
-	if (error.error_code == ERROR_NONE)
-    {
-        error_active = 0;
-		error_start = 0;
+        /* NVIC_SystemReset() 不会返回 */
     }
 }
 
