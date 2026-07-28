@@ -112,7 +112,6 @@ void MyCAN_Init(CAN_BaudRate baudrate)
 uint8_t MyCAN_Send_Message(uint32_t ID,uint8_t Len,uint8_t* Data)
 {
 	uint8_t mailbox;
-	uint32_t timeout = 0;
 	
 	//参数校验
     if ((Data == NULL) || (Len > CAN_MAX_DLC) || (ID > CAN_STD_ID_MAX))
@@ -142,11 +141,11 @@ uint8_t MyCAN_Send_Message(uint32_t ID,uint8_t Len,uint8_t* Data)
         return 0;  // 发送失败
     }
 	
+	uint32_t start_tick = HAL_GetTick();
 	while(CAN_TransmitStatus(CAN1,mailbox) != CAN_TxStatus_Ok)
 	{
-		timeout ++;
-		if(timeout > 100000)
-		{
+		if ((HAL_GetTick() - start_tick) > 10U)
+		{  /* 10ms 超时 */
 			CAN_CancelTransmit(CAN1, mailbox);
 			return 0;
 		}
