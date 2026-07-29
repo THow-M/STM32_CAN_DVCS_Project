@@ -151,6 +151,9 @@ void Control_Loop(void)
     uint8_t encoder_fault = Encoder_Fault_Check();
     if(encoder_fault)
 	{
+		error_code = ERROR_SENSOR_FUSION;
+		system_state = SYS_ERROR;
+		Motor_EmergencyStop();
         printf("Encoder fault: 0x%02X\r\n", encoder_fault);
         // 可以切换到开环控制
     }
