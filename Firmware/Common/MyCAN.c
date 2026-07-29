@@ -172,6 +172,7 @@ uint8_t MyCAN_Receive_Message(uint32_t* ID, uint8_t* Len, uint8_t* Data)
 	
     if (can_rx_buf.count == 0)
     {
+		__enable_irq();
         return 0;
     }
     
