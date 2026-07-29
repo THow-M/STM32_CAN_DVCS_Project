@@ -20,7 +20,7 @@
 	#define HEARTBEAT_PERIOD          1000
 #endif
 
-//ECU1节点配置
+//ECU3节点配置
 #ifdef ECU3
 	#define NODE_ID                   0x03
 	#define NODE_NAME                 "ECU3_Sensor_Unit"
