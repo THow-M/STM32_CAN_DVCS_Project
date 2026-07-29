@@ -161,12 +161,14 @@ void Motor_SetTargetSpeed(float speed_rpm, uint8_t direction)
 	else
 	{
         // 自动模式，PID控制
-        Motor_SetSpeed(motor_control.target_speed, direction);
-		
-        if (speed_rpm > 0)
+        /* 仅更新目标值，实际 PWM 由 Motor_RunPIDControl() 计算 */
+		if (speed_rpm > 0.0f)
+		{
 			motor_control.state = MOTOR_STATE_RUN;
-        else
+		} else
+		{
 			motor_control.state = MOTOR_STATE_STOP;
+		}
     }
 	
     printf("Target speed: %.1f RPM, Dir: %d\n", speed_rpm, direction);
