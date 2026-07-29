@@ -107,6 +107,9 @@ void Motor_SetSpeed(int16_t speed, uint8_t direction)
             PWM_SetCompare1(0);
             motor_control.state = MOTOR_STATE_BRAKE;
             break;
+		default:
+			Motor_SetSpeed(0, MOTOR_BRAKE);
+			break;
     }
 }
 
