@@ -173,6 +173,19 @@ void Ultrasonic_Update(void)
         Ultrasonic_Calculate_Distance();    /* 在主循环上下文执行浮点运算 */
     }
 	
+	// 处理超时 - 必须在触发条件之前
+    if(measurement_state && (current_time - trigger_time > 100))
+    {
+        measurement_state = 0;
+        ultrasonic_data.valid = 0;
+        last_measure_time = current_time;  // 更新时间，允许重新触发
+        if(current_time - last_timeout_log_time >= 1000)
+        {
+            last_timeout_log_time = current_time;
+            printf("Ultrasonic timeout\r\n");
+        }
+    }
+	
     // 每150ms测量一次
     if(current_time - last_measure_time >= 150)
 	{
@@ -184,19 +197,6 @@ void Ultrasonic_Update(void)
         }
         /* 若 measurement_state != 0，不更新 last_measure_time，等待当前测量完成 */
     }
-    
-    // 处理超时
-    if(measurement_state && current_time - trigger_time > 100)
-    {
-        measurement_state = 0;
-        ultrasonic_data.valid = 0;
-        /* 限频：每1000ms最多打印一次 */
-        if(current_time - last_timeout_log_time >= 1000)
-        {
-            last_timeout_log_time = current_time;
-            printf("Ultrasonic timeout\r\n");
-        }
-	}
 }
 
 float Ultrasonic_Get_Sound_Speed(void)
