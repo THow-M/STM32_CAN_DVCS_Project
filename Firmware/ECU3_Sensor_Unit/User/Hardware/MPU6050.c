@@ -233,16 +233,26 @@ void MPU6050_Apply_Calibration(void)
 void MPU6050_Calculate_Attitude(float dt)
 {
     static uint8_t first_run = 1;
+	static uint32_t last_tick = 0;
     float norm;
     float vx, vy, vz;
     float ex, ey, ez;
     float halfT = dt / 2.0f;
     
+	uint32_t now = Tick_ms;
+	
     if(first_run)
 	{
         first_run = 0;
+		last_tick = now;
         return;
     }
+	
+	// 计算实际 dt（限制最大 100ms）
+    dt = (float)(now - last_tick) / 1000.0f;
+    if (dt > 0.1f) dt = 0.1f;
+    if (dt <= 0.0f) dt = 0.001f;
+    last_tick = now;
     
     // 读取原始数据
     //MPU6050_Read_RawData();
