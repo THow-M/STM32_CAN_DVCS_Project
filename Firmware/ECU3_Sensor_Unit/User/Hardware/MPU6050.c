@@ -245,7 +245,7 @@ void MPU6050_Calculate_Attitude(float dt)
     }
     
     // 读取原始数据
-    MPU6050_Read_RawData();
+    //MPU6050_Read_RawData();
     
     // 应用校准
     MPU6050_Apply_Calibration();

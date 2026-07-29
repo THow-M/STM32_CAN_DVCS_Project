@@ -254,7 +254,10 @@ void Sensor_Fusion_Process(void)
         // 可选：记录异常，用于诊断
         // printf("Warning: sensor fusion dt clamped to %.3f\r\n", dt);
     }
-    
+	
+    // 姿态解算
+    MPU6050_Calculate_Attitude(dt);
+	
     // 1. 更新MPU6050姿态
     MPU6050_Data mpu = MPU6050_GetData();
     
@@ -263,9 +266,6 @@ void Sensor_Fusion_Process(void)
     
     // 3. 更新电压
     Voltage_Data volt = Voltage_GetData();
-	
-	// 姿态解算（基于已读取的原始数据，不触发 I2C）
-    MPU6050_Calculate_Attitude(dt);
     
     // 4. 融合数据
     sensor_fusion.distance_mm = ultrasonic_data.distance_mm;
