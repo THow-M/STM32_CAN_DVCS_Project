@@ -679,6 +679,8 @@ void Error_Handler(void)
     if(error_start_time == 0)
 	{
         error_start_time = current_time;
+		Motor_EmergencyStop();          /* 强制切断 PWM */
+        PID_Reset(&speed_pid);
         printf("Entering error state. Code: 0x%02X\r\n", error_code);
     }
     
