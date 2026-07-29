@@ -162,7 +162,12 @@ void Sensor_Self_Test(void)
     // 超声波自检
     printf("Ultrasonic test: ");
     Ultrasonic_Trigger();
-    Delay_ms(100);
+    uint32_t t0 = HAL_GetTick();
+	while (HAL_GetTick() - t0 < 200U)
+	{  /* 最多等 200ms */
+		Ultrasonic_Update();
+		if (ultrasonic_data.valid) break;
+	}
     if(ultrasonic_data.valid)
 	{
         printf("PASS (Distance: %dmm)\r\n", ultrasonic_data.distance_mm);
@@ -639,6 +644,7 @@ void CAN_Data_Handler(uint32_t id, uint8_t len, uint8_t* data)
 	{
         case MSG_ID_HEARTBEAT:
 		{
+			if (len < sizeof(HeartBeat_Data)) break;
             HeartBeat_Data *hb = (HeartBeat_Data*)data;
             if(hb->node_id >= 1 && hb->node_id <= NODE_NUM)
 			{
