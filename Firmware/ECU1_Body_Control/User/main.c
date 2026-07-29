@@ -10,6 +10,7 @@
 #include "Key.h"
 #include "LED.h"
 #include <string.h>
+#include <stdlib.h>
 
 // 全局变量
 System_State system_state = SYSTEM_IDLE;
@@ -316,8 +317,11 @@ void Sensor_Display_Mode(void)
         OLED_ShowNum(9*8, 0, sensor_data.distance, 4, OLED_8X16);
         OLED_ShowString(13*8 , 0, "mm", OLED_8X16);
         
+		int16_t pitch_deg = sensor_data.pitch / 10;
+		int16_t pitch_frac = sensor_data.pitch % 10;
         OLED_ShowString(0 , 16, "Pitch:", OLED_8X16);
-        OLED_ShowSignedNum(6*8, 16, sensor_data.pitch, 4, OLED_8X16);
+		OLED_Printf(6*8, 16, OLED_8X16, "%d.%d", pitch_deg, abs(pitch_frac));
+        //OLED_ShowSignedNum(6*8, 16, sensor_data.pitch, 4, OLED_8X16);
         OLED_ShowString(10*8, 16, "deg", OLED_8X16);
         
         OLED_ShowString(0, 32, "Roll:", OLED_8X16);
