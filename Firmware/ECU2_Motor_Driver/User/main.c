@@ -102,6 +102,13 @@ void System_Init(void)
 	// 编码器校准
     printf("Calibrating encoder...\r\n");
     Encoder_Calibrate();
+	
+	/* 看门狗 */
+	IWDG_WriteAccessCmd(IWDG_WriteAccess_Enable);
+	IWDG_SetPrescaler(IWDG_Prescaler_64);    /* 1.6kHz */
+	IWDG_SetReload(0x0FFF);                  /* ~2.5s */
+	IWDG_ReloadCounter();
+	IWDG_Enable();
     
     // 启动系统
     system_state = SYS_READY;
@@ -658,6 +665,8 @@ int main(void)
                 system_state = SYS_IDLE;
                 break;
         }
+		/* 喂狗 */
+		IWDG_ReloadCounter();
 	}
 }
 
