@@ -90,6 +90,8 @@ void System_Init(void)
 	{
         printf("MPU6050 initialization failed\r\n");
         error_code |= ERROR_MPU6050_FAIL;
+		system_state = SYS_ERROR;
+		return;
     }
     
     // 2. 初始化超声波
@@ -792,7 +794,7 @@ int main(void)
             if(system_uptime % 5 == 0)
 			{
                 printf("Uptime: %lus, State: %d, CAN: %s\r\n",
-                       system_uptime, system_state, can_connected ? "Connected" : "Disconnected");
+                       (unsigned long)system_uptime, system_state, can_connected ? "Connected" : "Disconnected");
             }
         }
         
