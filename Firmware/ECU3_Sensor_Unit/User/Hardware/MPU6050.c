@@ -273,9 +273,9 @@ void MPU6050_Calculate_Attitude(float dt)
     ez = (mpu6050_data.accel_x_g * vy - mpu6050_data.accel_y_g * vx);
     
     // 积分误差
-    exInt += ex * 0.5f * dt;
-    eyInt += ey * 0.5f * dt;
-    ezInt += ez * 0.5f * dt;
+    exInt += ex * dt;
+    eyInt += ey * dt;
+    ezInt += ez * dt;
     
     // 修正陀螺仪数据
     mpu6050_data.gyro_x_dps += mahony_params.Kp * ex + mahony_params.Ki * exInt;
