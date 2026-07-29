@@ -212,6 +212,14 @@ void Motor_RunPIDControl(void)
     uint32_t now = HAL_GetTick();
     if (now - last_time < 10) return;
     last_time = now;
+	
+	// 方向切换时重置 PID
+	static uint8_t last_dir = MOTOR_STOP;
+	if (motor_control.direction != last_dir)
+	{
+		PID_Reset(&speed_pid);
+		last_dir = motor_control.direction;
+	}
 
     Encoder_Data enc = Encoder_GetData();
     motor_control.current_speed = (int16_t)enc.speed_rpm;
