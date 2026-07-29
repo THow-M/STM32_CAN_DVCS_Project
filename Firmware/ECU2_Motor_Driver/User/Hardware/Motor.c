@@ -65,7 +65,7 @@ void Motor_Init(uint16_t arr, uint16_t psc)
     motor_control.protection.over_current = 0;
     motor_control.protection.over_temp = 0;
     motor_control.protection.stall = 0;
-    motor_control.protection.over_voltage = 0;
+    motor_control.protection.over_speed = 0;
     motor_control.protection.under_voltage = 0;
     motor_control.error_code = 0;
     motor_control.error_count = 0;
@@ -252,6 +252,10 @@ uint8_t Motor_ProtectionCheck(void)
         errors |= ERROR_OVER_CURRENT;
         motor_control.error_code = ERROR_OVER_CURRENT;
     }
+	else
+	{
+		motor_control.protection.over_current = 0;
+	}
 	
     // 堵转
     static uint32_t stall_start = 0;
@@ -270,6 +274,7 @@ uint8_t Motor_ProtectionCheck(void)
 	else
 	{
         stall_start = 0;
+		motor_control.protection.stall = 0;
     }
 	
     // 过速
@@ -278,6 +283,10 @@ uint8_t Motor_ProtectionCheck(void)
         errors |= ERROR_OVER_SPEED;
         motor_control.error_code = ERROR_OVER_SPEED;
     }
+	else
+	{
+		motor_control.protection.over_speed = 0;
+	}
 	
     if (errors)
 	{
@@ -357,7 +366,7 @@ Motor_Status Motor_GetStatus(void)
     if (motor_control.protection.over_current) st.protection_status |= 0x01;
     if (motor_control.protection.over_temp) st.protection_status |= 0x02;
     if (motor_control.protection.stall) st.protection_status |= 0x04;
-    if (motor_control.protection.over_voltage) st.protection_status |= 0x08;
+    if (motor_control.protection.over_speed) st.protection_status |= 0x08;
     if (motor_control.protection.under_voltage) st.protection_status |= 0x10;
     return st;
 }

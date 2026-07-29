@@ -23,7 +23,7 @@ typedef struct {
     uint8_t over_current:1;
     uint8_t over_temp:1;
     uint8_t stall:1;
-    uint8_t over_voltage:1;
+    uint8_t over_speed:1;
     uint8_t under_voltage:1;
 } Motor_Protection;
 

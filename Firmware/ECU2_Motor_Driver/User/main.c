@@ -699,7 +699,9 @@ void Error_Handler(void)
     
     // 尝试自动恢复
     if(current_time - error_start_time > 5000)
-	{  // 5秒后尝试恢复
+	{
+		
+		// 5秒后尝试恢复
         printf("Attempting to recover from error...\r\n");
         
         // 清除错误标志
