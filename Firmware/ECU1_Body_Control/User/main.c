@@ -213,6 +213,17 @@ void Remote_Control_Mode(void)
 	{
 		HeartBeat_Manager();
 		
+		uint32_t can_id;
+        uint8_t can_data[8];
+        uint8_t can_len;
+        uint8_t rx_count = 0U;
+        while (MyCAN_Receive_Message(&can_id, &can_len, can_data) 
+               && rx_count < 8U)
+        {
+            CAN_Data_Handler(can_id, can_len, can_data);
+            rx_count++;
+        }
+		
         // 处理按键
         uint8_t key = Key_Check(KEY_SINGLE);
         if(key == KEY4_PRESS)
@@ -301,6 +312,17 @@ void Sensor_Display_Mode(void)
 	{
 		HeartBeat_Manager();
 		
+		uint32_t can_id;
+        uint8_t can_data[8];
+        uint8_t can_len;
+        uint8_t rx_count = 0U;
+        while (MyCAN_Receive_Message(&can_id, &can_len, can_data) 
+               && rx_count < 8U)
+        {
+            CAN_Data_Handler(can_id, can_len, can_data);
+            rx_count++;
+        }
+		
         // 处理按键
         if(Key_Check(KEY_SINGLE) == KEY4_PRESS)
 		{
@@ -357,6 +379,17 @@ void System_Monitor_Mode(void)
     while(system_state == SYSTEM_MONITOR)
 	{
 		HeartBeat_Manager();
+		
+		uint32_t can_id;
+        uint8_t can_data[8];
+        uint8_t can_len;
+        uint8_t rx_count = 0U;
+        while (MyCAN_Receive_Message(&can_id, &can_len, can_data) 
+               && rx_count < 8U)
+        {
+            CAN_Data_Handler(can_id, can_len, can_data);
+            rx_count++;
+        }
 		
         // 处理按键
         if(Key_Check(KEY_SINGLE) == KEY4_PRESS)
@@ -431,6 +464,17 @@ void CAN_Test_Mode(void)
 	{
 		HeartBeat_Manager();
 		
+		uint32_t can_id;
+        uint8_t can_data[8];
+        uint8_t can_len;
+        uint8_t rx_count = 0U;
+        while (MyCAN_Receive_Message(&can_id, &can_len, can_data) 
+               && rx_count < 8U)
+        {
+            CAN_Data_Handler(can_id, can_len, can_data);
+            rx_count++;
+        }
+		
         // 处理按键
         uint8_t key = Key_Check(KEY_SINGLE);
         if(key == KEY4_PRESS)
@@ -466,9 +510,9 @@ void CAN_Test_Mode(void)
         OLED2_ShowString(0, 48, "Key4: Back", OLED_8X16);
         
         // 显示接收到的CAN报文
-        uint32_t can_id;
-        uint8_t can_data[8];
-        uint8_t can_len;
+        //uint32_t can_id;
+        //uint8_t can_data[8];
+        //uint8_t can_len;
 		
 		OLED_ShowString(0, 16, "RX ID:", OLED_8X16);
 		OLED_ShowString(0, 32, "Data:", OLED_8X16);
@@ -510,6 +554,17 @@ void Parameter_Setting_Mode(void)
     while(system_state == PARAM_SETTING)
 	{
 		HeartBeat_Manager();
+		
+		uint32_t can_id;
+        uint8_t can_data[8];
+        uint8_t can_len;
+        uint8_t rx_count = 0U;
+        while (MyCAN_Receive_Message(&can_id, &can_len, can_data) 
+               && rx_count < 8U)
+        {
+            CAN_Data_Handler(can_id, can_len, can_data);
+            rx_count++;
+        }
 		
         uint8_t key = Key_Check(KEY_SINGLE);
         
@@ -642,14 +697,22 @@ void HeartBeat_Manager(void)
   */
 void CAN_Data_Handler(uint32_t id, uint8_t len, uint8_t* data)
 {
+	if (data == NULL)
+    {
+        printf("CAN_Data_Handler: NULL data\r\n");
+        return;
+    }
+	
     switch(id)
 	{
         case MSG_ID_HEARTBEAT:
 		{
-            HeartBeat_Data *hb = (HeartBeat_Data*)data;
-            if(hb->node_id >= 1 && hb->node_id <= NODE_NUM)
-			{
-                heartbeat_time[hb->node_id - 1] = HAL_GetTick();
+            if (len < sizeof(HeartBeat_Data)) break;
+            HeartBeat_Data hb;
+            memcpy(&hb, data, sizeof(HeartBeat_Data));
+            if (hb.node_id >= 1U && hb.node_id <= NODE_NUM)
+            {
+                heartbeat_time[hb.node_id - 1] = HAL_GetTick();
             }
             break;
         }
@@ -679,11 +742,11 @@ void CAN_Data_Handler(uint32_t id, uint8_t len, uint8_t* data)
             
         case MSG_ID_SENSOR_DATA:
 		{
+            if (len < sizeof(Sensor_Data)) break;
+            Sensor_Data sensor_data;
             memcpy(&sensor_data, data, sizeof(Sensor_Data));
-            
-            // 如果距离过近，报警
-            if(sensor_data.distance < 200)
-			{  // 20cm
+            if (sensor_data.distance < 200)
+            {
                 printf("Warning: Distance too close! %dmm\r\n", sensor_data.distance);
             }
             break;
@@ -691,8 +754,10 @@ void CAN_Data_Handler(uint32_t id, uint8_t len, uint8_t* data)
 		
 		case MSG_ID_SYSTEM_CTRL:
 		{
-			SystemCtrl_Data *ctrl = (SystemCtrl_Data*)data;
-			printf("SystemCtrl: cmd=%d\r\n", ctrl->command);
+			if (len < sizeof(SystemCtrl_Data)) break;
+            SystemCtrl_Data ctrl;
+            memcpy(&ctrl, data, sizeof(SystemCtrl_Data));
+            printf("SystemCtrl: cmd=%d\r\n", ctrl.command);
 			//根据需要处理
 			
 			break;
