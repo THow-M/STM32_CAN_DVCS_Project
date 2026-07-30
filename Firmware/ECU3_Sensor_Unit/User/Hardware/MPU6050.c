@@ -201,23 +201,23 @@ void MPU6050_Calibrate(void)
   */
 void MPU6050_Apply_Calibration(void)
 {
-    mpu6050_data.accel_x -= mpu6050_data.accel_offset_x;
-    mpu6050_data.accel_y -= mpu6050_data.accel_offset_y;
-    mpu6050_data.accel_z -= mpu6050_data.accel_offset_z;
-    
-    mpu6050_data.gyro_x -= mpu6050_data.gyro_offset_x;
-    mpu6050_data.gyro_y -= mpu6050_data.gyro_offset_y;
-    mpu6050_data.gyro_z -= mpu6050_data.gyro_offset_z;
+    /* 使用局部变量计算校准值，不修改原始数据 */
+    int16_t cal_ax = mpu6050_data.accel_x - mpu6050_data.accel_offset_x;
+    int16_t cal_ay = mpu6050_data.accel_y - mpu6050_data.accel_offset_y;
+    int16_t cal_az = mpu6050_data.accel_z - mpu6050_data.accel_offset_z;
+    int16_t cal_gx = mpu6050_data.gyro_x - mpu6050_data.gyro_offset_x;
+    int16_t cal_gy = mpu6050_data.gyro_y - mpu6050_data.gyro_offset_y;
+    int16_t cal_gz = mpu6050_data.gyro_z - mpu6050_data.gyro_offset_z;
     
     // 重新计算g单位
-    mpu6050_data.accel_x_g = mpu6050_data.accel_x / 4096.0f;
-    mpu6050_data.accel_y_g = mpu6050_data.accel_y / 4096.0f;
-    mpu6050_data.accel_z_g = mpu6050_data.accel_z / 4096.0f;
+    mpu6050_data.accel_x_g = (float)cal_ax / 4096.0f;
+    mpu6050_data.accel_y_g = (float)cal_ay / 4096.0f;
+    mpu6050_data.accel_z_g = (float)cal_az / 4096.0f;
     
     // 重新计算dps单位
-    mpu6050_data.gyro_x_dps = mpu6050_data.gyro_x / 16.4f;
-    mpu6050_data.gyro_y_dps = mpu6050_data.gyro_y / 16.4f;
-    mpu6050_data.gyro_z_dps = mpu6050_data.gyro_z / 16.4f;
+    mpu6050_data.gyro_x_dps = (float)cal_gx / 16.4f;
+    mpu6050_data.gyro_y_dps = (float)cal_gy / 16.4f;
+    mpu6050_data.gyro_z_dps = (float)cal_gz / 16.4f;
 }
 
 /** 函  数：互补滤波姿态解算
@@ -237,23 +237,23 @@ void MPU6050_Calculate_Attitude(float dt)
     float norm;
     float vx, vy, vz;
     float ex, ey, ez;
-    float halfT = dt / 2.0f;
     
-	uint32_t now = Tick_ms;
-	
     if(first_run)
 	{
         first_run = 0;
-		last_tick = now;
+		last_tick = HAL_GetTick();
         return;
     }
 	
 	// 计算实际 dt（限制最大 100ms）
+	uint32_t now = HAL_GetTick();
     dt = (float)(now - last_tick) / 1000.0f;
     if (dt > 0.1f) dt = 0.1f;
     if (dt <= 0.0f) dt = 0.001f;
     last_tick = now;
-    
+	
+    float halfT = dt / 2.0f;
+	
     // 读取原始数据
     //MPU6050_Read_RawData();
     
