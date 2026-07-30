@@ -94,6 +94,7 @@ uint8_t MyI2C_Wait_Ack(void)
             MyI2C_Stop();
             return 1;  // 无ACK
         }
+		I2C_DELAY();
     }
     
     I2C_SCL_LOW();
