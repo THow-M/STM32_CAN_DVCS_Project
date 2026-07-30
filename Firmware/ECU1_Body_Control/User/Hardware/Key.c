@@ -99,12 +99,14 @@ uint8_t Key_Check(uint8_t Flag)
 {
 	for(uint8_t i = 0; i < KEY_COUNT; i++)
 	{
+		__disable_irq();  /* 临界区保护 */
 		if(Key_Flag[i] & Flag)
 		{
 			if(Flag != KEY_HOLD)
 			{
 				Key_Flag[i] &= ~Flag;
 			}
+			__enable_irq();
 			
 			switch(i)
 			{
@@ -116,9 +118,12 @@ uint8_t Key_Check(uint8_t Flag)
 					return KEY3_PRESS;
 				case 3:
 					return KEY4_PRESS;
+				default:
+					break;
 			}
 			
 		}
+		__enable_irq();
 	}
 
 	return 0;
