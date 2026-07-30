@@ -361,17 +361,19 @@ void Sensor_Anomaly_Detection(void)
   */
 void Sensor_Data_Filtering(void)
 {
+	static uint8_t filter_initialized = 0;
     static float filtered_distance = 0;
     static float filtered_roll = 0;
     static float filtered_pitch = 0;
     static float filtered_yaw = 0;
     
-    if(filtered_distance == 0)
+    if(filter_initialized == 0)
 	{
         filtered_distance = sensor_fusion.distance_cm;
         filtered_roll = sensor_fusion.roll;
         filtered_pitch = sensor_fusion.pitch;
         filtered_yaw = sensor_fusion.yaw;
+		filter_initialized = 1;
     }
 	else
 	{
