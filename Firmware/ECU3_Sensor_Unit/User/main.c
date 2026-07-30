@@ -122,6 +122,12 @@ void System_Init(void)
     system_state = SYS_READY;
     system_uptime = 0;
     sensor_ready = 1;
+	
+	IWDG_WriteAccessCmd(IWDG_WriteAccess_Enable);
+    IWDG_SetPrescaler(IWDG_Prescaler_64);
+    IWDG_SetReload(0x0FFF);  /* ~6.55s */
+    IWDG_ReloadCounter();
+    IWDG_Enable();
     
     printf("System initialized successfully!\r\n");
     
@@ -868,6 +874,8 @@ int main(void)
         // 简单延时
         Delay_ms(1);
 		
+		/* 喂狗 */
+		IWDG_ReloadCounter();
     }
 }
 
