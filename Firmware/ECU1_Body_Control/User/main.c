@@ -18,6 +18,7 @@ uint8_t selected_menu = 0;
 uint32_t last_heartbeat_time = 0;
 uint32_t last_display_time = 0;
 uint32_t last_can_send_time = 0;
+static volatile uint8_t Key_Scan_Flag = 0;
 
 /* ---- 错误处理静态变量 ---- */
 static ErrorReport_Data s_last_error = {0};    /* 最近一次收到的错误报告 */
@@ -868,6 +869,11 @@ int main(void)
 	
     while(1) 
 	{
+		if (Key_Scan_Flag)
+		{
+			Key_Scan_Flag = 0;
+			Key_Scan();
+		}
 		Key_Handler();
 		
 		HeartBeat_Manager();
@@ -979,7 +985,7 @@ void TIM2_IRQHandler(void)
 	if (TIM_GetITStatus(TIM2, TIM_IT_Update) == SET)
 	{
 		Tick_ms ++;
-		Key_Scan();
+		Key_Scan_Flag = 1;
 		
 		
 		TIM_ClearITPendingBit(TIM2, TIM_IT_Update);
