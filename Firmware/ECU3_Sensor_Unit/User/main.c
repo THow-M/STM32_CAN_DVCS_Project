@@ -326,10 +326,18 @@ void Sensor_Anomaly_Detection(void)
     }
     
     // 检查姿态角度
+	static uint32_t last_anomaly_print = 0;
+	static uint32_t current_time = 0;
     if(fabs(sensor_fusion.roll) > 45.0f || fabs(sensor_fusion.pitch) > 45.0f)
 	{
-        printf("Warning: Excessive tilt! Roll=%.1f, Pitch=%.1f\r\n", 
+		current_time = HAL_GetTick();
+		if (current_time - last_anomaly_print > 1000U)
+		{
+			last_anomaly_print = current_time;
+			printf("Warning: Excessive tilt! Roll=%.1f, Pitch=%.1f\r\n", 
                sensor_fusion.roll, sensor_fusion.pitch);
+		}
+        
         anomaly_detected = 1;
     }
     
@@ -699,6 +707,9 @@ void CAN_Data_Handler(uint32_t id, uint8_t len, uint8_t* data)
                     case SYS_CMD_SELF_TEST:
                         Sensor_Self_Test();
                         break;
+					default:
+						printf("Unknown command: %d\r\n", system_ctrl.command);
+						break;
                 }
             }
             break;
