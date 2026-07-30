@@ -83,7 +83,7 @@ uint16_t Voltage_Read_ADC(void)
         if(HAL_GetTick() - start > 10)
         {
             printf("ADC timeout!\r\n");
-            return 0;  /* 返回 0 表示失败 */
+            return ADC_INVALID_VALUE;  /* 返回 0 表示失败 */
         }
     }
     
@@ -120,9 +120,12 @@ void Voltage_Update(void)
         // 读取ADC值
         uint16_t adc_value = Voltage_Read_ADC();
         
-        // 保存到采样数组
-        adc_samples[sample_index] = adc_value;
-        sample_index = (sample_index + 1) % ADC_SAMPLE_COUNT;
+        // 保存到采样数组，跳过无效值
+		if (adc_value != ADC_INVALID_VALUE)
+		{
+			adc_samples[sample_index] = adc_value;
+			sample_index = (sample_index + 1) % ADC_SAMPLE_COUNT;
+		}
         
         // 计算平均值
         uint32_t sum = 0;
@@ -136,7 +139,7 @@ void Voltage_Update(void)
         // 步骤1: ADC电压 = ADC值 * 3.3V / 4096
         // 步骤2: 实际电压 = ADC电压 * 分压比
         float adc_voltage = avg_adc * ADC_REF_VOLTAGE / ADC_RESOLUTION;
-        float actual_voltage = adc_voltage * VOLTAGE_DIVIDER_RATIO;
+        float actual_voltage = adc_voltage * voltage_calibration_factor;
         
         // 转换为mV
         voltage_data.voltage_mv = (uint16_t)(actual_voltage * 1000);
