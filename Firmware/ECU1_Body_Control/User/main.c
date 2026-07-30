@@ -18,7 +18,7 @@ uint8_t selected_menu = 0;
 uint32_t last_heartbeat_time = 0;
 uint32_t last_display_time = 0;
 uint32_t last_can_send_time = 0;
-static volatile uint8_t Key_Scan_Flag = 0;
+//static volatile uint8_t Key_Scan_Flag = 0;
 
 /* ---- 错误处理静态变量 ---- */
 static ErrorReport_Data s_last_error = {0};    /* 最近一次收到的错误报告 */
@@ -223,6 +223,12 @@ void Remote_Control_Mode(void)
     
     while(system_state == REMOTE_CONTROL)
 	{
+		/*if (Key_Scan_Flag)
+		{
+			Key_Scan_Flag = 0;
+			Key_Scan();
+		}*/
+		
 		HeartBeat_Manager();
 		
 		uint32_t can_id;
@@ -309,6 +315,8 @@ void Remote_Control_Mode(void)
 		OLED2_Update();
 		
         Delay_ms(50);
+		
+		IWDG_ReloadCounter();
     }
 }
 
@@ -322,6 +330,12 @@ void Sensor_Display_Mode(void)
     
     while(system_state == SENSOR_DISPLAY)
 	{
+		/*if (Key_Scan_Flag)
+		{
+			Key_Scan_Flag = 0;
+			Key_Scan();
+		}*/
+		
 		HeartBeat_Manager();
 		
 		uint32_t can_id;
@@ -377,6 +391,8 @@ void Sensor_Display_Mode(void)
 		OLED2_Update();
 		
         Delay_ms(100);
+		
+		IWDG_ReloadCounter();
     }
 }
 
@@ -390,6 +406,12 @@ void System_Monitor_Mode(void)
     
     while(system_state == SYSTEM_MONITOR)
 	{
+		/*if (Key_Scan_Flag)
+		{
+			Key_Scan_Flag = 0;
+			Key_Scan();
+		}*/
+		
 		HeartBeat_Manager();
 		
 		uint32_t can_id;
@@ -460,6 +482,8 @@ void System_Monitor_Mode(void)
 		OLED2_Update();
         
         Delay_ms(100);
+		
+		IWDG_ReloadCounter();
     }
 }
 
@@ -474,6 +498,12 @@ void CAN_Test_Mode(void)
     
     while(system_state == CAN_TEST)
 	{
+		/*if (Key_Scan_Flag)
+		{
+			Key_Scan_Flag = 0;
+			Key_Scan();
+		}*/
+		
 		HeartBeat_Manager();
 		
 		uint32_t can_id;
@@ -545,6 +575,8 @@ void CAN_Test_Mode(void)
 		OLED2_Update();
         
         Delay_ms(50);
+		
+		IWDG_ReloadCounter();
     }
 }
 
@@ -565,6 +597,12 @@ void Parameter_Setting_Mode(void)
     
     while(system_state == PARAM_SETTING)
 	{
+		/*if (Key_Scan_Flag)
+		{
+			Key_Scan_Flag = 0;
+			Key_Scan();
+		}*/
+		
 		HeartBeat_Manager();
 		
 		uint32_t can_id;
@@ -653,6 +691,8 @@ void Parameter_Setting_Mode(void)
 		OLED2_Update();
 		
         Delay_ms(50);
+		
+		IWDG_ReloadCounter();
     }
 }
 
@@ -880,11 +920,11 @@ int main(void)
 	
     while(1) 
 	{
-		if (Key_Scan_Flag)
+		/*if (Key_Scan_Flag)
 		{
 			Key_Scan_Flag = 0;
 			Key_Scan();
-		}
+		}*/
 		Key_Handler();
 		
 		HeartBeat_Manager();
@@ -998,8 +1038,8 @@ void TIM2_IRQHandler(void)
 	if (TIM_GetITStatus(TIM2, TIM_IT_Update) == SET)
 	{
 		Tick_ms ++;
-		Key_Scan_Flag = 1;
-		
+		//Key_Scan_Flag = 1;
+		Key_Scan();
 		
 		TIM_ClearITPendingBit(TIM2, TIM_IT_Update);
 	}
