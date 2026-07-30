@@ -885,14 +885,21 @@ void Error_Handler(void)
         static uint8_t led_state = 0;
         led_state = !led_state;
         
-        GPIO_WriteBit(GPIOB, GPIO_Pin_12, led_state ? Bit_SET : Bit_RESET);
-        GPIO_WriteBit(GPIOB, GPIO_Pin_13, led_state ? Bit_SET : Bit_RESET);
-        GPIO_WriteBit(GPIOB, GPIO_Pin_14, led_state ? Bit_SET : Bit_RESET);
+        if (led_state)
+		{
+			LED1_ON(); LED2_ON(); LED3_ON();
+		}
+		else
+		{
+			LED1_OFF(); LED2_OFF(); LED3_OFF();
+		}
     }
     
     // 尝试自动恢复
     if(current_time - error_start_time > 5000)
-	{  // 5秒后尝试恢复
+	{  
+		error_start_time = current_time;  /* 允许周期性重试 */
+		// 5秒后尝试恢复
         printf("Attempting to recover from error...\r\n");
         
         // 尝试重新初始化传感器
@@ -914,9 +921,12 @@ void Error_Handler(void)
         
         if(error_code & ERROR_VOLTAGE_LOW)
 		{
-            printf("Reinitializing Voltage detection...\r\n");
-            Voltage_Init();
-            error_code &= ~ERROR_VOLTAGE_LOW;
+            Voltage_Update();
+			if (voltage_data.voltage_v >= VOLTAGE_MIN)
+			{
+				error_code &= ~ERROR_VOLTAGE_LOW;
+				printf("Voltage recovered: %.2fV\r\n", voltage_data.voltage_v);
+			}
         }
         
         // 如果所有错误都清除，恢复系统
