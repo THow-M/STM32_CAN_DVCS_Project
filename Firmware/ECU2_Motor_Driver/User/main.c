@@ -74,8 +74,8 @@ void System_Init(void)
     Encoder_Init();
     
     // 初始化电机
-    // PWM频率 = 72MHz / (71+1) / (999+1) = 1kHz
-    Motor_Init(999, 71);
+    // PWM频率 = 72MHz / (0+1) / (7199+1) = 10kHz
+	Motor_Init(7199, 0);
     
     // 初始化PID控制器
     // 参数需要根据实际电机调整
@@ -404,6 +404,9 @@ void MyCAN_Data_Handler(uint32_t id, uint8_t len,uint8_t* data)
                         break;
                         
                     case SYS_CMD_RESET:
+						motor_control.state = MOTOR_STATE_IDLE;
+						motor_control.error_count = 0;
+						motor_control.error_code = 0;
                         NVIC_SystemReset();
                         break;
                         
