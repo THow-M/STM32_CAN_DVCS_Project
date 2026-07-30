@@ -137,7 +137,18 @@ void Control_Loop(void)
     if(current_time - last_protection_check > 100)
 	{  // 100ms
         last_protection_check = current_time;
-        
+		
+        // 编码器故障检测
+		uint8_t encoder_fault = Encoder_Fault_Check();
+		if(encoder_fault)
+		{
+			error_code = ERROR_SENSOR_FUSION;
+			system_state = SYS_ERROR;
+			Motor_EmergencyStop();
+			printf("Encoder fault: 0x%02X\r\n", encoder_fault);
+			// 可以切换到开环控制
+		}
+		
         uint8_t protection_error = Motor_ProtectionCheck();
         if(protection_error)
 		{
@@ -147,16 +158,7 @@ void Control_Loop(void)
         }
     }
     
-    // 2. 编码器故障检测
-    uint8_t encoder_fault = Encoder_Fault_Check();
-    if(encoder_fault)
-	{
-		error_code = ERROR_SENSOR_FUSION;
-		system_state = SYS_ERROR;
-		Motor_EmergencyStop();
-        printf("Encoder fault: 0x%02X\r\n", encoder_fault);
-        // 可以切换到开环控制
-    }
+    
     
     // 3. PID控制
     if(control_mode == CONTROL_MODE_AUTO && system_state == SYS_RUN)
