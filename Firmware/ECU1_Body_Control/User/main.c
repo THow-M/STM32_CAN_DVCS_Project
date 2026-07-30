@@ -89,7 +89,18 @@ void System_Init(void)
     
     system_state = SYSTEM_READY;
 	
-	heartbeat_time[NODE_ID - 1] = HAL_GetTick();
+	uint32_t boot_time = HAL_GetTick();
+    for (uint8_t i = 0; i < NODE_NUM; i++)
+    {
+        heartbeat_time[i] = boot_time;  /* 给予所有节点启动宽限 */
+    }
+	
+	/* 看门狗 */
+	IWDG_WriteAccessCmd(IWDG_WriteAccess_Enable);
+    IWDG_SetPrescaler(IWDG_Prescaler_64);   /* 40kHz/64 = 625Hz */
+    IWDG_SetReload(0x0FFF);                  /* ~6.55s 超时 */
+    IWDG_ReloadCounter();
+    IWDG_Enable();
     
     printf("System initialized successfully!\r\n");
 }
@@ -932,6 +943,8 @@ int main(void)
 				NVIC_SystemReset();
 				break;
         }
+		/* 喂狗 */
+		IWDG_ReloadCounter();
     }
 }
 
