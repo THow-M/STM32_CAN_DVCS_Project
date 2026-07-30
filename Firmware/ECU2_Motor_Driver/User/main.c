@@ -307,6 +307,8 @@ void Communication_Handler(void)
   */
 void MyCAN_Data_Handler(uint32_t id, uint8_t len,uint8_t* data)
 {
+	if (data == NULL || len == 0 || len > 8) return;
+	
     switch(id)
 	{
         case MSG_ID_HEARTBEAT:
@@ -700,8 +702,24 @@ void Error_Handler(void)
 			LED_OFF();
 	}
     
+	/* 根据错误类型决定是否允许自动恢复 */
+    uint8_t auto_recoverable = 0U;
+    switch (error_code)
+    {
+        case ERROR_OVER_TEMP:
+            auto_recoverable = 1U;  /* 过热可恢复 */
+            break;
+        case ERROR_OVER_CURRENT:
+        case ERROR_STALL:
+            auto_recoverable = 0U;  /* 过流/堵转需手动复位 */
+            break;
+        default:
+            auto_recoverable = 1U;
+            break;
+    }
+	
     // 尝试自动恢复
-    if(current_time - error_start_time > 5000)
+    if(auto_recoverable && (current_time - error_start_time > 5000))
 	{
 		
 		// 5秒后尝试恢复
