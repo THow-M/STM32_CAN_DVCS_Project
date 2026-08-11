@@ -268,25 +268,35 @@ void Remote_Control_Mode(void)
 			MyCAN_Send_SpeedCmd(0, 0, 100);
 		}
 		
-		if (direction_switching)
+		if (direction_switching &&
+			(HAL_GetTick() - switch_start >= 200U) &&
+			(abs(motor_status.actual_speed) <= 10))
 		{
-			/* 200ms 静止期后再切换方向 */
-			if (HAL_GetTick() - switch_start > 200U)
-			{
-				direction = pending_direction;
-				direction_switching = 0U;
-			}
+			direction = pending_direction;
+			direction_switching = 0U;
 		}
         
         // 发送速度指令
-        if(HAL_GetTick() - last_can_send_time > 100)
+        if ((HAL_GetTick() - last_can_send_time) >= 100U)
 		{
-            last_can_send_time = HAL_GetTick();
-            MyCAN_Send_SpeedCmd(speed * 10, direction, 50);
-            
-            printf("Send SpeedCmd: %d RPM, Direction: %s\r\n", 
-                   speed * 10, (direction == 1) ? "Forward" : "Reverse");
-        }
+			uint8_t cmd_direction;
+			int16_t cmd_speed;
+		
+			last_can_send_time = HAL_GetTick();
+		
+			if (direction_switching)
+			{
+				cmd_speed = 0;
+				cmd_direction = 0;   /* MOTOR_STOP */
+			}
+			else
+			{
+				cmd_speed = (int16_t)speed * 10;
+				cmd_direction = direction;
+			}
+		
+			(void)MyCAN_Send_SpeedCmd(cmd_speed, cmd_direction, 50U);
+		}
         
         // 显示控制界面
         OLED_Clear();
