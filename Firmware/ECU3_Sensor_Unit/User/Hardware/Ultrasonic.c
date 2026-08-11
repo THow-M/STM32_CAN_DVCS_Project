@@ -270,14 +270,29 @@ void Ultrasonic_Calibrate(void)
     
     for(uint16_t i = 0; i < samples; i++)
 	{
-        Ultrasonic_Trigger();
-        Delay_ms(100);
-        
-        if(ultrasonic_data.valid)
+        uint32_t start = HAL_GetTick();
+	
+		Ultrasonic_Trigger();
+	
+		while ((HAL_GetTick() - start) < 100U)
 		{
-            sum += ultrasonic_data.distance_mm;
-            valid_samples++;
-        }
+			Ultrasonic_Update();
+	
+			if (ultrasonic_data.valid)
+			{
+				break;
+			}
+	
+			Delay_ms(1);
+		}
+
+		if (ultrasonic_data.valid)
+		{
+			sum += ultrasonic_data.distance_mm;
+			valid_samples++;
+		}
+	
+		Delay_ms(50);
         
         printf("Sample %d: %dmm\r\n", i + 1, ultrasonic_data.distance_mm);
     }
