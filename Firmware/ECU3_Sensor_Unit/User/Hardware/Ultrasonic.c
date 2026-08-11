@@ -119,6 +119,9 @@ void Ultrasonic_Init(void)
   */
 void Ultrasonic_Trigger(void)
 {
+	static volatile uint32_t trigger_time = 0U;
+	trigger_time = HAL_GetTick();
+	
     /* 1. 关 CC4 中断 */
     TIM_ITConfig(TIM4, TIM_IT_CC4, DISABLE);
     
