@@ -288,7 +288,13 @@ void Sensor_Fusion_Process(void)
     sensor_fusion.yaw = mpu.yaw;
     sensor_fusion.voltage_v = volt.filtered_v;
     sensor_fusion.temperature_c = mpu.temperature_c;
-    sensor_fusion.valid = ultrasonic_data.valid;
+    //sensor_fusion.valid = ultrasonic_data.valid;
+	/* --- 修复：valid = 所有子系统都有效 --- */
+	MPU6050_Data mpu_check = MPU6050_GetData();
+	Voltage_Data volt_check = Voltage_GetData();
+	uint8_t mpu_valid = (mpu_check.accel_x != 0 || mpu_check.accel_y != 0 || mpu_check.accel_z != 0) ? 1 : 0;
+	uint8_t volt_valid = (volt_check.status != VOLTAGE_LOW) ? 1 : 0;
+	sensor_fusion.valid = ultrasonic_data.valid & mpu_valid & volt_valid;
     sensor_fusion.timestamp = current_time;
     
     // 5. 异常检测
