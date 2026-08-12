@@ -254,11 +254,20 @@ void MyCAN_Send_SensorData(uint16_t distance, int16_t pitch, int16_t roll, int16
     sensor.distance = distance;
     sensor.pitch = pitch;
     sensor.roll = roll;
-    sensor.yaw_high = (uint8_t)(yaw >> 8);
-    sensor.yaw_low = (uint8_t)(yaw & 0xFF);
-    sensor.voltage = voltage;
+    sensor.yaw = yaw;
     
     MyCAN_Send_Message(MSG_ID_SENSOR_DATA, sizeof(Sensor_Data), (uint8_t*)&sensor);
+}
+
+uint8_t MyCAN_Send_SensorVoltage(uint16_t voltage)
+{
+    SensorVoltage_Data sensor_voltage = {0};
+
+    sensor_voltage.voltage = voltage;
+
+    return MyCAN_Send_Message(MSG_ID_SENSOR_VOLTAGE,
+                              sizeof(sensor_voltage),
+                              (uint8_t *)&sensor_voltage);
 }
 
 /**函  数：发送系统控制命令
@@ -319,5 +328,20 @@ void USB_LP_CAN1_RX0_IRQHandler(void)
             can_rx_buf.head = (can_rx_buf.head + 1) % CAN_RX_BUF_SIZE;
             can_rx_buf.overflow++;
         }
+    }
+	
+	/* --- 新增：清空所有FIFO0相关中断标志 --- */
+    if (CAN_GetITStatus(CAN1, CAN_IT_FMP0) != RESET)
+    {
+        CAN_ClearITPendingBit(CAN1, CAN_IT_FMP0);
+    }
+    if (CAN_GetFlagStatus(CAN1, CAN_FLAG_FF0) != RESET)
+    {
+        CAN_ClearFlag(CAN1, CAN_FLAG_FF0);
+    }
+    if (CAN_GetFlagStatus(CAN1, CAN_FLAG_FOV0) != RESET)
+    {
+        CAN_ClearFlag(CAN1, CAN_FLAG_FOV0);
+        can_rx_buf.overflow++;  /* 记录溢出统计 */
     }
 }

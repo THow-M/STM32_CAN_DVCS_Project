@@ -30,6 +30,7 @@ MotorStatus_Data motor_status = {0};
 Sensor_Data sensor_data = {0};
 uint8_t heartbeat_status[NODE_NUM] = {0};
 uint32_t heartbeat_time[NODE_NUM] = {0};
+uint16_t sensor_voltage_mv = 0U;
 
 // 菜单项
 const char *menu_items[] = {
@@ -386,10 +387,13 @@ void Sensor_Display_Mode(void)
         OLED_ShowSignedNum(5*8, 32, sensor_data.roll, 4, OLED_8X16);
         OLED_ShowString(9*8, 32, "deg", OLED_8X16);
         
-        OLED_ShowString(0, 48, "Yaw:", OLED_8X16);
-        OLED_ShowSignedNum(4*8, 48, sensor_data.yaw_high, 2, OLED_8X16);
-		OLED_ShowNum(6*8, 48, sensor_data.yaw_low, 2, OLED_8X16);
-        OLED_ShowString(8*8, 48, "deg", OLED_8X16);
+        int16_t yaw_deg = sensor_data.yaw / 10;
+		int16_t yaw_frac = sensor_data.yaw % 10;
+
+		OLED_ShowString(0, 48, "Yaw:", OLED_8X16);
+		OLED_Printf(4 * 8, 48, OLED_8X16, "%d.%d",
+					yaw_deg, abs(yaw_frac));
+		OLED_ShowString(9 * 8, 48, "deg", OLED_8X16);
         
         OLED2_ShowString(0, 16, "Voltage:", OLED_8X16);
         OLED2_ShowNum(8*8, 16, sensor_data.voltage, 4, OLED_8X16);
@@ -813,6 +817,20 @@ void CAN_Data_Handler(uint32_t id, uint8_t len, uint8_t* data)
             }
             break;
         }
+		
+		case MSG_ID_SENSOR_VOLTAGE:
+		{
+			SensorVoltage_Data voltage_frame;
+		
+			if (len != sizeof(voltage_frame))
+			{
+				break;
+			}
+		
+			memcpy(&voltage_frame, data, sizeof(voltage_frame));
+			sensor_voltage_mv = voltage_frame.voltage;
+			break;
+		}
 		
 		case MSG_ID_SYSTEM_CTRL:
 		{

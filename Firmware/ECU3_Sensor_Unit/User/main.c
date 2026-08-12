@@ -608,6 +608,9 @@ void Communication_Handler(void)
                                 (int16_t)(sensor_fusion.roll * 10),
                                 (int16_t)(sensor_fusion.yaw * 10),
                                 (uint16_t)(sensor_fusion.voltage_v * 1000));  // mV
+	
+			(void)MyCAN_Send_SensorVoltage(
+				(uint16_t)(sensor_fusion.voltage_v * 1000.0f));
             
             // LED指示
             LED2_ON();

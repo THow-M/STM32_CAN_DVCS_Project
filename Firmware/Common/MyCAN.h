@@ -36,6 +36,7 @@ typedef enum
 #define MSG_ID_SENSOR_DATA        0x103   //传感器数据
 #define MSG_ID_SYSTEM_CTRL        0x104   //系统控制
 #define MSG_ID_ERROR_REPORT       0x105   //错误报告
+#define MSG_ID_SENSOR_VOLTAGE     0x106
 
 //数据结构定义
 #pragma pack(push,1)   //1字节对齐
@@ -75,10 +76,15 @@ typedef struct
     uint16_t distance;            //距离（mm）
     int16_t pitch;                //俯仰角（0.1度）
     int16_t roll;                 //横滚角（0.1度）
-    uint8_t yaw_high;             //航向角高8位（0.1度）
-    uint8_t yaw_low;              //航向角低8位（0.1度）
-    uint16_t voltage;             //电压（mV）
+    int16_t yaw;                  //航向角（0.1度）
 } Sensor_Data;
+
+/* 电压独立发送，避免原 Sensor_Data 的 10 字节非法长度 */
+typedef struct
+{
+    uint16_t voltage;       /* mV */
+    uint8_t reserved[6];
+} SensorVoltage_Data;
 
 //系统控制数据结构（8字节）
 typedef struct
@@ -108,6 +114,7 @@ void MyCAN_Send_Heartbeat(uint8_t node_id, uint8_t status, uint8_t error_code, u
 void MyCAN_Send_SpeedCmd(int16_t speed, uint8_t direction, uint8_t acceleration);
 void MyCAN_Send_MotorStatus(int16_t speed, uint16_t current, /*uint8_t temp,*/ uint8_t status);
 void MyCAN_Send_SensorData(uint16_t distance, int16_t pitch, int16_t roll, int16_t yaw, uint16_t voltage);
+uint8_t MyCAN_Send_SensorVoltage(uint16_t voltage);
 void MyCAN_Send_SystemCtrl(uint8_t command, uint8_t param1, uint8_t param2);
 void MyCAN_Send_ErrorReport(uint8_t node_id, uint8_t error_type, uint16_t error_code);
 
