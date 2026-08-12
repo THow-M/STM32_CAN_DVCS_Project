@@ -396,7 +396,7 @@ void Sensor_Display_Mode(void)
 		OLED_ShowString(9 * 8, 48, "deg", OLED_8X16);
         
         OLED2_ShowString(0, 16, "Voltage:", OLED_8X16);
-        OLED2_ShowNum(8*8, 16, sensor_data.voltage, 4, OLED_8X16);
+        OLED2_ShowNum(8*8, 16, sensor_voltage_mv, 4, OLED_8X16);
         OLED2_ShowString(12*8, 16, "mV", OLED_8X16);
         
         OLED2_ShowString(0, 48, "Key4: Back", OLED_8X16);
@@ -932,6 +932,13 @@ void CAN_Data_Handler(uint32_t id, uint8_t len, uint8_t* data)
 			break;
 		}
     }
+	
+	static uint32_t g_last_can_id = 0;
+	static uint8_t g_last_can_len = 0;
+	static uint8_t g_last_can_data[8] = {0};
+	g_last_can_id = id;
+	g_last_can_len = len;
+	memcpy(g_last_can_data, data, len < 8 ? len : 8);
 }
 
 
