@@ -306,30 +306,34 @@ void Sensor_Fusion_Process(void)
   */
 void Sensor_Anomaly_Detection(void)
 {
-    static uint8_t anomaly_count = 0;
-    uint8_t anomaly_detected = 0;
-    
     // 检查超声波数据
-    if(ultrasonic_data.distance_mm < 20)
-	{  // 小于2cm
-        if(++anomaly_count > 5)
+    static uint8_t anomaly_close_count = 0;   /* 近距离计数 */
+	static uint8_t anomaly_far_count = 0;     /* 远距离计数 */
+	uint8_t anomaly_detected = 0;
+	
+	if(ultrasonic_data.distance_mm < 20)
+	{
+		anomaly_far_count = 0;                /* 近距离：清零远距离计数 */
+		if(++anomaly_close_count > 5)
 		{
-            printf("Warning: Object too close! (%dmm)\r\n", ultrasonic_data.distance_mm);
-            anomaly_detected = 1;
-        }
-    }
+			printf("Warning: Object too close! (%dmm)\r\n", ultrasonic_data.distance_mm);
+			anomaly_detected = 1;
+		}
+	}
 	else if(ultrasonic_data.distance_mm > 4000)
-	{  // 大于4m
-        if(++anomaly_count > 5)
+	{
+		anomaly_close_count = 0;              /* 远距离：清零近距离计数 */
+		if(++anomaly_far_count > 5)
 		{
-            printf("Warning: Ultrasonic reading out of range! (%dmm)\r\n", ultrasonic_data.distance_mm);
-            anomaly_detected = 1;
-        }
-    }
+			printf("Warning: Ultrasonic reading out of range! (%dmm)\r\n", ultrasonic_data.distance_mm);
+			anomaly_detected = 1;
+		}
+	}
 	else
 	{
-        anomaly_count = 0;
-    }
+		anomaly_close_count = 0;
+		anomaly_far_count = 0;
+	}
     
     // 检查姿态角度
 	static uint32_t last_anomaly_print = 0;
