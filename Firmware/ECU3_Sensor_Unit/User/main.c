@@ -18,6 +18,7 @@ System_State system_state = SYS_IDLE;
 volatile uint32_t system_uptime = 0;
 uint8_t error_code = ERROR_NONE;
 uint8_t can_connected = 0;
+static uint8_t diagnostic_requested = 0;
 
 // 传感器数据
 Sensor_Fusion sensor_fusion = {0};
@@ -513,7 +514,7 @@ void Control_Loop(void)
         Sensor_Update_All();
     }
 	
-    // 1. 传感器融合处理
+    // 传感器融合处理
     if(system_state == SYS_RUN || system_state == SYS_READY)
 	{
         Sensor_Fusion_Process();
@@ -536,14 +537,7 @@ void Control_Loop(void)
         }
     }
     
-    // 2. 自动校准检查
-    static uint8_t calibration_requested = 0;
-    if(calibration_requested && !calibration_complete)
-	{
-        Auto_Calibration();
-    }
-    
-    // 3. 系统状态监测
+    // 系统状态监测
     static uint32_t last_status_check = 0;
     if(current_time - last_status_check > 500)
 	{  // 每500ms检查一次
@@ -720,7 +714,7 @@ void CAN_Data_Handler(uint32_t id, uint8_t len, uint8_t* data)
                         break;
                         
                     case SYS_CMD_DIAGNOSTIC:
-                        System_Diagnostic();
+                        diagnostic_requested = 1;
                         break;
                         
                     case SYS_CMD_SELF_TEST:
@@ -836,6 +830,13 @@ int main(void)
         // 通信处理
         Communication_Handler();
         
+		//打印诊断
+		if (diagnostic_requested)
+		{
+			diagnostic_requested = 0;
+			System_Diagnostic();
+		}
+		
         // 系统状态机
         switch(system_state)
 		{
