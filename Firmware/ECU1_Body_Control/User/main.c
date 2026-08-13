@@ -20,6 +20,14 @@ uint32_t last_display_time = 0;
 uint32_t last_can_send_time = 0;
 //static volatile uint8_t Key_Scan_Flag = 0;
 
+/* CAN_Test_Mode 修复 */
+static uint32_t g_last_rx_id = 0;
+static uint8_t g_last_rx_data[8] = {0};
+static uint8_t g_last_rx_len = 0;
+static uint8_t g_rx_updated = 0;
+
+static uint32_t g_heartbeat_period_ms = HEARTBEAT_PERIOD;
+
 /* ---- 错误处理静态变量 ---- */
 static ErrorReport_Data s_last_error = {0};    /* 最近一次收到的错误报告 */
 static uint8_t s_error_pending = 0U;           /* 是否有待处理的错误 */
@@ -573,7 +581,7 @@ void CAN_Test_Mode(void)
 		OLED_ShowString(0, 16, "RX ID:", OLED_8X16);
 		OLED_ShowString(0, 32, "Data:", OLED_8X16);
         
-        if(MyCAN_Receive_Message(&can_id, &can_len, can_data))
+        /*if(MyCAN_Receive_Message(&can_id, &can_len, can_data))
 		{
             //OLED_ShowString(0, 16, "RX ID:", OLED_8X16);
             OLED_ShowHexNum(6*8, 16, can_id, 3, OLED_8X16);
@@ -583,7 +591,17 @@ void CAN_Test_Mode(void)
 			{
                 OLED_ShowHexNum( 5*8 + 2*8*i, 32, can_data[i], 2, OLED_8X16);
             }
-        }
+        }*/
+		
+		if(g_rx_updated)
+		{
+			g_rx_updated = 0;
+			OLED_ShowHexNum(6*8, 16, g_last_rx_id, 3, OLED_8X16);
+			for(uint8_t i = 0; i < g_last_rx_len && i < 8; i++)
+			{
+				OLED_ShowHexNum(5*8 + 2*8*i, 32, g_last_rx_data[i], 2, OLED_8X16);
+			}
+		}
 		
 		OLED_Update();
 		OLED2_Update();
@@ -663,6 +681,7 @@ void Parameter_Setting_Mode(void)
 				MyCAN_Init((CAN_BaudRate)can_baudrate);
         
 				/* 更新心跳周期 */
+				g_heartbeat_period_ms = heartbeat_period * 1000U;  /* 秒转毫秒 */
 				//HeartBeat_SetPeriod(heartbeat_period);
         
 				/* TODO: 保存到 EEPROM/Flash */
@@ -720,7 +739,7 @@ void HeartBeat_Manager(void)
     uint32_t current_time = HAL_GetTick();
     
     // 发送心跳包
-    if(current_time - last_heartbeat_send > HEARTBEAT_PERIOD)
+    if(current_time - last_heartbeat_send > g_heartbeat_period_ms)
 	{
         last_heartbeat_send = current_time;
         MyCAN_Send_Heartbeat(NODE_ID, STATUS_NORMAL, ERROR_NONE, current_time / 1000);
@@ -938,6 +957,8 @@ void CAN_Data_Handler(uint32_t id, uint8_t len, uint8_t* data)
 	g_last_can_id = id;
 	g_last_can_len = len;
 	memcpy(g_last_can_data, data, len < 8 ? len : 8);
+	
+	g_rx_updated = 1;
 }
 
 
