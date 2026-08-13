@@ -809,7 +809,6 @@ void CAN_Data_Handler(uint32_t id, uint8_t len, uint8_t* data)
         case MSG_ID_SENSOR_DATA:
 		{
             if (len < sizeof(Sensor_Data)) break;
-            Sensor_Data sensor_data;
             memcpy(&sensor_data, data, sizeof(Sensor_Data));
             if (sensor_data.distance < 200)
             {
