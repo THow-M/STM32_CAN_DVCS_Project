@@ -481,7 +481,7 @@ void System_Monitor_Mode(void)
         if(heartbeat_status[1])
 		{
             OLED_ShowString(2*6, 16, "Speed:", OLED_6X8);
-            OLED_ShowNum(8*6, 16, motor_status.actual_speed, 4, OLED_6X8);
+            OLED_ShowSignedNum(8*6, 16, motor_status.actual_speed, 4, OLED_6X8);
         }
         
         OLED_ShowString(0, 24, "ECU3:", OLED_6X8);
