@@ -291,6 +291,7 @@ uint8_t Motor_ProtectionCheck(void)
     // 过速
     if (abs(motor_control.current_speed) > MOTOR_MAX_SPEED * 1.1f)
 	{
+		motor_control.protection.over_speed = 1;
         errors |= ERROR_OVER_SPEED;
         motor_control.error_code = ERROR_OVER_SPEED;
     }
