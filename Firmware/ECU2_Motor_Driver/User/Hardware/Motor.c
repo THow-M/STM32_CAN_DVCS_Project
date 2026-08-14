@@ -458,14 +458,11 @@ void Motor_Diagnostic(void)
 /** 函  数：获取电机电流
   * 参  数：无
   * 返回值：fake 电机电流
-  * 注  意：此函数还未实现，返回电流为伪造值
+  * 注  意：此函数还未实现，返回电流为0
   */
 uint16_t Motor_GetCurrent(void)
 {
     static uint16_t fake = 0;
-    if (motor_control.state == MOTOR_STATE_RUN)
-        fake = motor_control.current_speed * 10;
-    else
-        fake = 0;
+	
     return fake;
 }
