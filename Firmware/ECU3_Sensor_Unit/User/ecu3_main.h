@@ -36,13 +36,6 @@ typedef struct
 } Sensor_Fusion;
 
 
-// 系统命令定义
-#define SYS_CMD_START        1
-#define SYS_CMD_STOP         2
-#define SYS_CMD_RESET        3
-#define SYS_CMD_CALIBRATE    4
-#define SYS_CMD_DIAGNOSTIC   5
-#define SYS_CMD_SELF_TEST    6
 
 // 函数声明
 void System_Init(void);

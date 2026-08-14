@@ -198,13 +198,13 @@ uint8_t MyCAN_Receive_Message(uint32_t* ID, uint8_t* Len, uint8_t* Data)
   */
 void MyCAN_Send_Heartbeat(uint8_t node_id, uint8_t status, uint8_t error_code, uint32_t uptime)
 {
-    HeartBeat_Data heartbeat;
+    HeartBeat_Data heartbeat = {0};
     heartbeat.node_id = node_id;
     heartbeat.status = status;
     heartbeat.error_code = error_code;
     heartbeat.uptime = uptime;
     
-    MyCAN_Send_Message(MSG_ID_HEARTBEAT, sizeof(HeartBeat_Data), (uint8_t*)&heartbeat);
+    MyCAN_Send_Message(MSG_ID_HEARTBEAT, sizeof(heartbeat), (uint8_t*)&heartbeat);
 }
 
 /**函  数：发送速度指令
@@ -215,12 +215,12 @@ void MyCAN_Send_Heartbeat(uint8_t node_id, uint8_t status, uint8_t error_code, u
   */
 void MyCAN_Send_SpeedCmd(int16_t speed, uint8_t direction, uint8_t acceleration)
 {
-    SpeedCmd_Data cmd;
+    SpeedCmd_Data cmd = {0};
     cmd.target_speed = speed;
     cmd.direction = direction;
     cmd.acceleration = acceleration;
     
-    MyCAN_Send_Message(MSG_ID_SPEED_CMD, sizeof(SpeedCmd_Data), (uint8_t*)&cmd);
+    MyCAN_Send_Message(MSG_ID_SPEED_CMD, sizeof(cmd), (uint8_t*)&cmd);
 }
 
 /**函  数：发送电机状态
@@ -232,13 +232,13 @@ void MyCAN_Send_SpeedCmd(int16_t speed, uint8_t direction, uint8_t acceleration)
   */
 void MyCAN_Send_MotorStatus(int16_t speed, uint16_t current, /*uint8_t temp,*/ uint8_t status)
 {
-    MotorStatus_Data motor;
+    MotorStatus_Data motor = {0};
     motor.actual_speed = speed;
     motor.current = current;
     //motor.temperature = temp;
     motor.status = status;
     
-    MyCAN_Send_Message(MSG_ID_MOTOR_STATUS, sizeof(MotorStatus_Data), (uint8_t*)&motor);
+    MyCAN_Send_Message(MSG_ID_MOTOR_STATUS, sizeof(motor), (uint8_t*)&motor);
 }
 
 /**函  数：发送传感器数据
@@ -248,7 +248,7 @@ void MyCAN_Send_MotorStatus(int16_t speed, uint16_t current, /*uint8_t temp,*/ u
   *参  数：voltage 要发送的电压数据
   *返回值：无
   */
-void MyCAN_Send_SensorData(uint16_t distance, int16_t pitch, int16_t roll, int16_t yaw, uint16_t voltage)
+void MyCAN_Send_SensorData(uint16_t distance, int16_t pitch, int16_t roll, int16_t yaw)
 {
     Sensor_Data sensor;
     sensor.distance = distance;
@@ -256,7 +256,7 @@ void MyCAN_Send_SensorData(uint16_t distance, int16_t pitch, int16_t roll, int16
     sensor.roll = roll;
     sensor.yaw = yaw;
     
-    MyCAN_Send_Message(MSG_ID_SENSOR_DATA, sizeof(Sensor_Data), (uint8_t*)&sensor);
+    MyCAN_Send_Message(MSG_ID_SENSOR_DATA, sizeof(sensor), (uint8_t*)&sensor);
 }
 
 uint8_t MyCAN_Send_SensorVoltage(uint16_t voltage)
@@ -276,14 +276,14 @@ uint8_t MyCAN_Send_SensorVoltage(uint16_t voltage)
   *参  数：param2 参数2
   *返回值：无
   */
-void MyCAN_Send_SystemCtrl(uint8_t command, uint8_t param1, uint8_t param2)
+void MyCAN_Send_SystemCtrl(uint8_t target_node, uint8_t command, uint8_t argument)
 {
-    SystemCtrl_Data ctrl;
+    SystemCtrl_Data ctrl = {0};
     ctrl.command = command;
-    ctrl.param1 = param1;
-    ctrl.param2 = param2;
+    ctrl.param1 = target_node;
+    ctrl.param2 = argument;
     
-    MyCAN_Send_Message(MSG_ID_SYSTEM_CTRL, sizeof(SystemCtrl_Data), (uint8_t*)&ctrl); 
+    MyCAN_Send_Message(MSG_ID_SYSTEM_CTRL, sizeof(ctrl), (uint8_t*)&ctrl); 
 }
 
 /**函  数：发送错误报告

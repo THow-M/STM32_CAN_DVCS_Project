@@ -19,14 +19,6 @@ typedef enum
     SYS_CALIBRATING    // 校准
 } System_State;
 
-// 系统命令定义
-#define SYS_CMD_START        1
-#define SYS_CMD_STOP         2
-#define SYS_CMD_RESET        3
-#define SYS_CMD_MANUAL       4
-#define SYS_CMD_AUTO         5
-#define SYS_CMD_CALIBRATE    6
-#define SYS_CMD_DIAGNOSTIC   7
 
 //函数声明
 void System_Init(void);

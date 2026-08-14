@@ -50,4 +50,16 @@
 #define STATUS_ERROR                  0x02
 #define STATUS_CRITICAL               0x03
 
+/* 系统控制命令：所有 ECU 必须使用同一组值 */
+#define SYS_CMD_START       1U
+#define SYS_CMD_STOP        2U
+#define SYS_CMD_RESET       3U
+#define SYS_CMD_CALIBRATE   4U
+#define SYS_CMD_DIAGNOSTIC  5U
+#define SYS_CMD_SELF_TEST   6U
+#define SYS_CMD_MANUAL      7U
+#define SYS_CMD_AUTO        8U
+
+#define CAN_TARGET_BROADCAST 0U
+
 #endif
