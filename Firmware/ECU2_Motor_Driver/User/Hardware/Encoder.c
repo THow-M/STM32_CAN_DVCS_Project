@@ -131,6 +131,9 @@ float Encoder_CalculateSpeed(uint16_t sample_time_ms)
 	static uint8_t first_run = 1;
     
     uint32_t current_time = HAL_GetTick();
+	
+	(void)Encoder_GetCount();
+	
     uint32_t elapsed_time = current_time - last_calc_time;
 	
 	if(first_run)
