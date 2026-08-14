@@ -48,6 +48,12 @@ SystemCtrl_Data system_ctrl = {0};
 uint8_t heartbeat_status[NODE_NUM] = {0};
 uint32_t heartbeat_time[NODE_NUM] = {0};
 
+static uint8_t SystemCtrl_TargetsThisNode(const SystemCtrl_Data *ctrl)
+{
+    return (ctrl->param1 == CAN_TARGET_BROADCAST ||
+            ctrl->param1 == NODE_ID) ? 1U : 0U;
+}
+
 /** 函  数：系统初始化
   * 参  数：无
   * 返回值：无
@@ -386,14 +392,19 @@ void MyCAN_Data_Handler(uint32_t id, uint8_t len,uint8_t* data)
             if(len >= sizeof(SystemCtrl_Data))
 			{
                 memcpy(&system_ctrl, data, sizeof(SystemCtrl_Data));
+				
+				if (SystemCtrl_TargetsThisNode(&system_ctrl) == 0U)
+				{
+					break;
+				}
                 
                 printf("Received SystemCtrl: Command=%d\r\n", system_ctrl.command);
                 
                 switch(system_ctrl.command)
 				{
                     case SYS_CMD_START:
+						Motor_SetControlMode(CONTROL_MODE_AUTO);
                         system_state = SYS_RUN;
-                        control_mode = CONTROL_MODE_AUTO;
                         printf("System started in auto mode\r\n");
                         break;
                         
@@ -411,12 +422,12 @@ void MyCAN_Data_Handler(uint32_t id, uint8_t len,uint8_t* data)
                         break;
                         
                     case SYS_CMD_MANUAL:
-                        control_mode = CONTROL_MODE_MANUAL;
+                        Motor_SetControlMode(CONTROL_MODE_MANUAL);
                         printf("Switched to manual mode\r\n");
                         break;
                         
                     case SYS_CMD_AUTO:
-                        control_mode = CONTROL_MODE_AUTO;
+                        Motor_SetControlMode(CONTROL_MODE_AUTO);
                         printf("Switched to auto mode\r\n");
                         break;
                         

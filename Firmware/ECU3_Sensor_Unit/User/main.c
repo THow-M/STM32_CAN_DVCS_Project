@@ -40,6 +40,13 @@ SystemCtrl_Data system_ctrl = {0};
 volatile uint8_t heartbeat_status[NODE_NUM] = {0};
 volatile uint32_t heartbeat_time[NODE_NUM] = {0};
 
+
+static uint8_t SystemCtrl_TargetsThisNode(const SystemCtrl_Data *ctrl)
+{
+    return (ctrl->param1 == CAN_TARGET_BROADCAST ||
+            ctrl->param1 == NODE_ID) ? 1U : 0U;
+}
+
 /** 函  数：系统初始化
   * 参  数：无
   * 返回值：无
@@ -705,6 +712,11 @@ void CAN_Data_Handler(uint32_t id, uint8_t len, uint8_t* data)
             if(len >= sizeof(SystemCtrl_Data))
 			{
                 memcpy(&system_ctrl, data, sizeof(SystemCtrl_Data));
+				
+				if (SystemCtrl_TargetsThisNode(&system_ctrl) == 0U)
+				{
+					break;
+				}
                 
                 printf("Received SystemCtrl: Command=%d\r\n", system_ctrl.command);
                 
