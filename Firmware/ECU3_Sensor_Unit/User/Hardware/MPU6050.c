@@ -91,7 +91,11 @@ uint8_t MPU6050_Init(void)
 	/* 新增：先丢弃前 10 次采样（瞬态数据） */
     for(uint8_t i = 0; i < 10; i++)
     {
-        MPU6050_Read_RawData();
+        if (MPU6050_Read_RawData() == 0U)
+		{
+			printf("MPU6050: Initial sample failed\r\n");
+			return 0U;
+		}
         Delay_ms(10);
     }
     
@@ -106,40 +110,40 @@ uint8_t MPU6050_Init(void)
   * 参  数：无
   * 返回值：无
   */
-void MPU6050_Read_RawData(void)
+uint8_t MPU6050_Read_RawData(void)
 {
     uint8_t buffer[14];
+	
+	if (MyI2C_Read_Bytes(MPU6050_ADDR, ACCEL_XOUT_H, sizeof(buffer), buffer) != 0U)
+    {
+        return 0U;
+    }
     
-    if(MyI2C_Read_Bytes(MPU6050_ADDR, ACCEL_XOUT_H, 14, buffer) == 0)
-	{
-        // 加速度数据
-        mpu6050_data.accel_x = (int16_t)((buffer[0] << 8) | buffer[1]);
-        mpu6050_data.accel_y = (int16_t)((buffer[2] << 8) | buffer[3]);
-        mpu6050_data.accel_z = (int16_t)((buffer[4] << 8) | buffer[5]);
-        
-        // 温度数据
-        mpu6050_data.temp = (int16_t)((buffer[6] << 8) | buffer[7]);
-        
-        // 陀螺仪数据
-        mpu6050_data.gyro_x = (int16_t)((buffer[8] << 8) | buffer[9]);
-        mpu6050_data.gyro_y = (int16_t)((buffer[10] << 8) | buffer[11]);
-        mpu6050_data.gyro_z = (int16_t)((buffer[12] << 8) | buffer[13]);
-        
-        // 转换为实际单位
-        mpu6050_data.accel_x_g = mpu6050_data.accel_x / 4096.0f;  // ±8g: 4096 LSB/g
-        mpu6050_data.accel_y_g = mpu6050_data.accel_y / 4096.0f;
-        mpu6050_data.accel_z_g = mpu6050_data.accel_z / 4096.0f;
-        
-        mpu6050_data.gyro_x_dps = mpu6050_data.gyro_x / 16.4f;  // ±2000°/s: 16.4 LSB/°/s
-        mpu6050_data.gyro_y_dps = mpu6050_data.gyro_y / 16.4f;
-        mpu6050_data.gyro_z_dps = mpu6050_data.gyro_z / 16.4f;
-        
-        mpu6050_data.temperature_c = mpu6050_data.temp / 340.0f + 36.53f;
-    }
-	else
-	{
-        printf("MPU6050: Failed to read data\r\n");
-    }
+    // 加速度数据
+    mpu6050_data.accel_x = (int16_t)((buffer[0] << 8) | buffer[1]);
+    mpu6050_data.accel_y = (int16_t)((buffer[2] << 8) | buffer[3]);
+    mpu6050_data.accel_z = (int16_t)((buffer[4] << 8) | buffer[5]);
+    
+    // 温度数据
+    mpu6050_data.temp = (int16_t)((buffer[6] << 8) | buffer[7]);
+    
+    // 陀螺仪数据
+    mpu6050_data.gyro_x = (int16_t)((buffer[8] << 8) | buffer[9]);
+    mpu6050_data.gyro_y = (int16_t)((buffer[10] << 8) | buffer[11]);
+    mpu6050_data.gyro_z = (int16_t)((buffer[12] << 8) | buffer[13]);
+    
+    // 转换为实际单位
+    mpu6050_data.accel_x_g = mpu6050_data.accel_x / 4096.0f;  // ±8g: 4096 LSB/g
+    mpu6050_data.accel_y_g = mpu6050_data.accel_y / 4096.0f;
+    mpu6050_data.accel_z_g = mpu6050_data.accel_z / 4096.0f;
+    
+    mpu6050_data.gyro_x_dps = mpu6050_data.gyro_x / 16.4f;  // ±2000°/s: 16.4 LSB/°/s
+    mpu6050_data.gyro_y_dps = mpu6050_data.gyro_y / 16.4f;
+    mpu6050_data.gyro_z_dps = mpu6050_data.gyro_z / 16.4f;
+    
+    mpu6050_data.temperature_c = mpu6050_data.temp / 340.0f + 36.53f;
+	
+    return 1U;
 }
 
 /** 函  数：传感器校准

@@ -19,6 +19,8 @@ volatile uint32_t system_uptime = 0;
 uint8_t error_code = ERROR_NONE;
 uint8_t can_connected = 0;
 static uint8_t diagnostic_requested = 0;
+static uint8_t mpu_sample_valid = 0U;
+static uint8_t mpu_consecutive_failures = 0U;
 
 // 传感器数据
 Sensor_Fusion sensor_fusion = {0};
@@ -215,8 +217,26 @@ void Sensor_Self_Test(void)
  */
 void Sensor_Update_All(void)
 {
-    /* 1. 更新 MPU6050（当前阻塞式读取约 5ms，可改为 DMA+中断） */
-    MPU6050_Read_RawData();
+	/* 1. 更新 MPU6050（可改为 DMA+中断） */
+	if (MPU6050_Read_RawData() != 0U)
+    {
+        mpu_sample_valid = 1U;
+        mpu_consecutive_failures = 0U;
+    }
+    else
+    {
+        if (mpu_consecutive_failures < 255U)
+        {
+            mpu_consecutive_failures++;
+        }
+
+        if (mpu_consecutive_failures >= 3U)
+        {
+            mpu_sample_valid = 0U;
+            error_code |= ERROR_MPU6050_FAIL;
+            system_state = SYS_ERROR;
+        }
+    }
  
     /* 2. 更新超声波（内部含节流，触发后立即返回，非阻塞） */
     Ultrasonic_Update();
@@ -291,11 +311,9 @@ void Sensor_Fusion_Process(void)
     sensor_fusion.temperature_c = mpu.temperature_c;
     //sensor_fusion.valid = ultrasonic_data.valid;
 	/* --- 修复：valid = 所有子系统都有效 --- */
-	MPU6050_Data mpu_check = MPU6050_GetData();
-	Voltage_Data volt_check = Voltage_GetData();
-	uint8_t mpu_valid = (mpu_check.accel_x != 0 || mpu_check.accel_y != 0 || mpu_check.accel_z != 0) ? 1 : 0;
-	uint8_t volt_valid = (volt_check.status != VOLTAGE_LOW) ? 1 : 0;
-	sensor_fusion.valid = ultrasonic_data.valid & mpu_valid & volt_valid;
+	uint8_t voltage_valid;
+	voltage_valid = (volt.status == VOLTAGE_NORMAL || volt.status == VOLTAGE_HIGH) ? 1U : 0U;
+	sensor_fusion.valid = (uint8_t)(ultrasonic_data.valid && mpu_sample_valid && voltage_valid);
     sensor_fusion.timestamp = current_time;
     
     // 5. 异常检测
