@@ -80,7 +80,7 @@ void MyCAN_Init(CAN_BaudRate baudrate)
 	}
 	
 	CAN_InitStructure.CAN_Mode = CAN_Mode_Normal;
-	CAN_InitStructure.CAN_NART = DISABLE;           //非自动重传
+	CAN_InitStructure.CAN_NART = ENABLE;            //自动重传
 	CAN_InitStructure.CAN_TXFP = DISABLE;           //发送优先级由ID决定
 	CAN_InitStructure.CAN_RFLM = DISABLE;           //不锁定FIFO
 	CAN_InitStructure.CAN_AWUM = ENABLE;            //自动唤醒
