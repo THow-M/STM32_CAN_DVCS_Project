@@ -3,7 +3,10 @@
 
 #include <stdio.h>
 
-extern volatile char Serial_RxPacket[];
+/* 串口接收包最大长度（含结尾 '\0'，实际有效载荷 = 100-1 = 99 字节） */
+#define SERIAL_RX_PACKET_SIZE   100U
+
+extern volatile char Serial_RxPacket[SERIAL_RX_PACKET_SIZE];
 extern volatile uint8_t Serial_RxFlag;
 
 void Serial_Init(uint32_t baudrate);

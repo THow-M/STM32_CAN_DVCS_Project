@@ -1,4 +1,5 @@
 #include "stm32f10x.h"                  // Device header
+#include "Serial.h"
 #include <stdio.h>
 #include <stdarg.h>
 
@@ -76,6 +77,7 @@ void Serial_SendByte(uint8_t Byte)
 void Serial_SendArray(uint8_t *Array, uint16_t Length)
 {
 	uint16_t i;
+	if (Array == NULL) return;
 	for (i = 0; i < Length; i ++)		//遍历数组
 	{
 		Serial_SendByte(Array[i]);		//依次调用Serial_SendByte发送每个字节数据
@@ -89,8 +91,10 @@ void Serial_SendArray(uint8_t *Array, uint16_t Length)
   */
 void Serial_SendString(char *String)
 {
-	uint8_t i;
-	for (i = 0; String[i] != '\0'; i ++)//遍历字符数组（字符串），遇到字符串结束标志位后停止
+	if (String == NULL) return;
+	uint16_t i;
+	/* 最大长度钳制，异常字符串（无 \0）不超过 1024 次循环，避免死循环 */
+	for (i = 0; (String[i] != '\0') && (i < 1024U); i ++)
 	{
 		Serial_SendByte(String[i]);		//依次调用Serial_SendByte发送每个字节数据
 	}
@@ -119,9 +123,11 @@ uint32_t Serial_Pow(uint32_t X, uint32_t Y)
 void Serial_SendNumber(uint32_t Number, uint8_t Length)
 {
 	uint8_t i;
+	/* Length 上限钳制到 10（uint32_t 最大 10 位十进制；传 20 会超 Serial_Pow uint32_t 表达范围 → 0/除零） */
+	if (Length > 10U) Length = 10U;
 	for (i = 0; i < Length; i ++)		//根据数字长度遍历数字的每一位
 	{
-		Serial_SendByte(Number / Serial_Pow(10, Length - i - 1) % 10 + '0');	//依次调用Serial_SendByte发送每位数字
+		Serial_SendByte((uint8_t)(Number / Serial_Pow(10U, (uint32_t)(Length - i - 1U)) % 10U + '0'));
 	}
 }
 
@@ -144,11 +150,18 @@ int fputc(int ch, FILE *f)
   */
 void Serial_Printf(char *format, ...)
 {
+	if (format == NULL)
+	{
+		return;                       /* 空指针立即返回 */
+	}
 	char String[100];				//定义字符数组
 	va_list arg;					//定义可变参数列表数据类型的变量arg
 	va_start(arg, format);			//从format开始，接收参数列表到arg变量
-	vsprintf(String, format, arg);	//使用vsprintf打印格式化字符串和参数列表到字符数组中
+	/* vsprintf → vsnprintf，最大 sizeof(String)-1，截断后仍保证 '\0' 结尾 */
+	(void)vsnprintf(String, sizeof(String), format, arg);
 	va_end(arg);					//结束变量arg
+	/* 最后一个字节强制 '\0'（即使 vsnprintf 内部已做，双保险） */
+	String[sizeof(String) - 1U] = '\0';
 	Serial_SendString(String);		//串口发送字符数组（字符串）
 }
 
@@ -188,8 +201,18 @@ void USART1_IRQHandler(void)
 			}
 			else						//接收到了正常的数据
 			{
-				Serial_RxPacket[pRxPacket] = RxData;		//将数据存入数据包数组的指定位置
-				pRxPacket ++;			//数据包的位置自增
+				/* 写 Serial_RxPacket 前检查长度上限（留 1 字节给 '\0'） */
+				if (pRxPacket < SERIAL_RX_PACKET_SIZE - 1U)
+				{
+					Serial_RxPacket[pRxPacket] = RxData;		//将数据存入数据包数组的指定位置
+					pRxPacket ++;			//数据包的位置自增
+				}
+				else
+				{
+					/* 溢出: 丢弃当前字节并静默复位指针（避免溢出后持续写越界） */
+					pRxPacket = 0;
+					RxState = 0;
+				}
 			}
 		}
 		/*状态2，接收数据包第二个包尾*/
@@ -198,6 +221,9 @@ void USART1_IRQHandler(void)
 			if (RxData == '\n')			//如果收到第二个包尾
 			{
 				RxState = 0;			//状态归0
+				/* 上限钳制兜底（极端情况下不会写越界） */
+				if (pRxPacket >= SERIAL_RX_PACKET_SIZE)
+					pRxPacket = SERIAL_RX_PACKET_SIZE - 1U;
 				Serial_RxPacket[pRxPacket] = '\0';			//将收到的字符数据包添加一个字符串结束标志
 				Serial_RxFlag = 1;		//接收数据包标志位置1，成功接收一个数据包
 			}
