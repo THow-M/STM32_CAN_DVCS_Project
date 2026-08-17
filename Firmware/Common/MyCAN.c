@@ -167,24 +167,33 @@ uint8_t MyCAN_Receive_Message(uint32_t* ID, uint8_t* Len, uint8_t* Data)
     {
         return 0;
     }
+	
+    /* 保存原 PRIMASK 状态（0=开, 1=关），用 PRIMASK 而非 BASEPRI，避免 FreeRTOS 下 BASEPRI 冲突 */
+    uint32_t primask = __get_PRIMASK();
     // 临界区：防止 ISR 在读取过程中修改
     __disable_irq();
-	
-    if (can_rx_buf.count == 0)
+
+    /* count 读取在关中断之后，保证跨平台原子（Cortex-M3 8-bit 天然原子，此写法兼容） */
+    if (can_rx_buf.count == 0U)
     {
-		__enable_irq();
+		if (primask == 0U) { __enable_irq(); }   /* 仅原状态为"开"才恢复 */
         return 0;
     }
     
     *ID = can_rx_buf.msg[can_rx_buf.tail].StdId;
     *Len = can_rx_buf.msg[can_rx_buf.tail].DLC;
-    for (i = 0; i < *Len; i++)
+    for (i = 0U; i < *Len; i++)
     {
         Data[i] = can_rx_buf.msg[can_rx_buf.tail].Data[i];
     }
     can_rx_buf.tail = (can_rx_buf.tail + 1) % CAN_RX_BUF_SIZE;
     can_rx_buf.count--;
-    __enable_irq();
+
+    /* 仅原状态为开中断才 __enable_irq，保持调用者上下文一致 */
+    if (primask == 0U)
+	{
+        __enable_irq();
+    }
     
     return 1;
 }
@@ -245,12 +254,11 @@ void MyCAN_Send_MotorStatus(int16_t speed, uint16_t current, /*uint8_t temp,*/ u
   *参  数：distance 要发送的距离
   *参  数：pitch 要发送的俯仰角数据
   *参  数：roll 要发送的横滚角数据
-  *参  数：voltage 要发送的电压数据
   *返回值：无
   */
 void MyCAN_Send_SensorData(uint16_t distance, int16_t pitch, int16_t roll, int16_t yaw)
 {
-    Sensor_Data sensor;
+    Sensor_Data sensor = {0};
     sensor.distance = distance;
     sensor.pitch = pitch;
     sensor.roll = roll;
@@ -259,6 +267,10 @@ void MyCAN_Send_SensorData(uint16_t distance, int16_t pitch, int16_t roll, int16
     MyCAN_Send_Message(MSG_ID_SENSOR_DATA, sizeof(sensor), (uint8_t*)&sensor);
 }
 
+/**函  数：发送传感器电压数据
+  *参  数：voltage 要发送的电压数据
+  *返回值：无
+  */
 uint8_t MyCAN_Send_SensorVoltage(uint16_t voltage)
 {
     SensorVoltage_Data sensor_voltage = {0};
@@ -294,7 +306,7 @@ void MyCAN_Send_SystemCtrl(uint8_t target_node, uint8_t command, uint8_t argumen
   */
 void MyCAN_Send_ErrorReport(uint8_t node_id, uint8_t error_type, uint16_t error_code)
 {
-    ErrorReport_Data error;
+    ErrorReport_Data error = {0};
     error.node_id = node_id;
     error.error_type = error_type;
     error.error_code = error_code;
