@@ -369,7 +369,7 @@ void Sensor_Anomaly_Detection(void)
     
     // 检查姿态角度
 	static uint32_t last_anomaly_print = 0;
-	static uint32_t current_time = 0;
+	uint32_t current_time = 0;
     if(fabs(sensor_fusion.roll) > 45.0f || fabs(sensor_fusion.pitch) > 45.0f)
 	{
 		current_time = HAL_GetTick();
