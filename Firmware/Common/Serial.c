@@ -7,10 +7,19 @@ volatile char Serial_RxPacket[100];				//定义接收数据包数组，数据包
 volatile uint8_t Serial_RxFlag;					//接收数据包标志位
 
 /**
-  * 串口初始化
+  * 函    数：串口初始化
+  * 参    数：baudrate 要设置的波特率
+  * 返 回 值：无
   */
 void Serial_Init(uint32_t baudrate)
 {
+	/* 串口波特率合法范围 [1200, 921600]，超范围钳制到 115200 并打印告警 */
+	if ((baudrate < 1200U) || (baudrate > 921600U))
+	{
+		printf("WARN: Serial_Init baudrate=%lu out of [1200, 921600], clamping to 115200\r\n", (unsigned long)baudrate);
+		baudrate = 115200U;
+	}
+	
 	/*开启时钟*/
 	RCC_APB2PeriphClockCmd(RCC_APB2Periph_USART1, ENABLE);
 	RCC_APB2PeriphClockCmd(RCC_APB2Periph_GPIOA, ENABLE);
