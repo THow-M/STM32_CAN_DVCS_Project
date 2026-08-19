@@ -313,7 +313,7 @@ void Communication_Handler(void)
   * 参  数：data 要处理的报文数据
   * 返回值：无
   */
-void MyCAN_Data_Handler(uint32_t id, uint8_t len,uint8_t* data)
+void MyCAN_Data_Handler(uint32_t id, uint8_t len,const uint8_t* data)
 {
 	if (data == NULL || len == 0 || len > 8) return;
 	
@@ -321,12 +321,16 @@ void MyCAN_Data_Handler(uint32_t id, uint8_t len,uint8_t* data)
 	{
         case MSG_ID_HEARTBEAT:
 		{
-            HeartBeat_Data *hb = (HeartBeat_Data*)data;
-            if(hb->node_id >= 1 && hb->node_id <= NODE_NUM)
+			HeartBeat_Data hb = {0};
+			/* 精确长度判断（packed(1) 结构体 = 8B） */
+			if (len != sizeof(HeartBeat_Data)) break;
+			memcpy(&hb, data, sizeof(HeartBeat_Data));
+            
+            if(hb.node_id >= 1 && hb.node_id <= NODE_NUM)
 			{
-                heartbeat_time[hb->node_id - 1] = HAL_GetTick();
+                heartbeat_time[hb.node_id - 1] = HAL_GetTick();
                 
-                if(hb->node_id == NODE_ID_ECU1)
+                if(hb.node_id == NODE_ID_ECU1)
 				{  // 来自ECU1
                     can_connected = 1;
                 }

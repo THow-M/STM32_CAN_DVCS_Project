@@ -693,13 +693,16 @@ void CAN_Data_Handler(uint32_t id, uint8_t len, uint8_t* data)
 	{
         case MSG_ID_HEARTBEAT:
 		{
-			if (len < sizeof(HeartBeat_Data)) break;
-            HeartBeat_Data *hb = (HeartBeat_Data*)data;
-            if(hb->node_id >= 1 && hb->node_id <= NODE_NUM)
+			HeartBeat_Data hb = {0};
+			/* 精确长度判断（packed(1) 结构体 = 8B） */
+			if (len != sizeof(HeartBeat_Data)) break;
+			memcpy(&hb, data, sizeof(HeartBeat_Data));
+			
+            if(hb.node_id >= 1 && hb.node_id <= NODE_NUM)
 			{
-                heartbeat_time[hb->node_id - 1] = HAL_GetTick();
+                heartbeat_time[hb.node_id - 1] = HAL_GetTick();
                 
-                if(hb->node_id == NODE_ID_ECU1)
+                if(hb.node_id == NODE_ID_ECU1)
 				{  // 来自ECU1
                     can_connected = 1;
                 }
