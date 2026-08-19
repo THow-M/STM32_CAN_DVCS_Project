@@ -2,7 +2,7 @@
 #define __MYCAN_H
 
 
-extern volatile uint8_t MyCAN_RxFlag;
+//extern volatile uint8_t MyCAN_RxFlag;
 
 #define CAN_RX_BUF_SIZE 8            // 接收环形缓冲区大小
 

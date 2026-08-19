@@ -7,9 +7,9 @@
 #define CAN_EXT_ID_MAX      0x1FFFFFFFU
 #define CAN_MAX_DLC         8U
 
-CanTxMsg TxMessage;
+static CanTxMsg TxMessage;
 static CAN_RxBuffer_t can_rx_buf = {0};
-volatile uint8_t MyCAN_RxFlag = 0;
+static volatile uint8_t MyCAN_RxFlag = 0;
 
 void MyCAN_Init(CAN_BaudRate baudrate)
 {
@@ -182,6 +182,8 @@ uint8_t MyCAN_Receive_Message(uint32_t* ID, uint8_t* Len, uint8_t* Data)
     
     *ID = can_rx_buf.msg[can_rx_buf.tail].StdId;
     *Len = can_rx_buf.msg[can_rx_buf.tail].DLC;
+	/* DLC 钳制到 CAN_MAX_DLC=8；防止 DLC=9/15 导致后面 for(i<*Len) 写 Data[8] 越界 */
+    if (*Len > CAN_MAX_DLC) { *Len = CAN_MAX_DLC; }
     for (i = 0U; i < *Len; i++)
     {
         Data[i] = can_rx_buf.msg[can_rx_buf.tail].Data[i];
