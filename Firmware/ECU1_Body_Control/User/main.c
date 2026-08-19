@@ -18,7 +18,7 @@ uint8_t selected_menu = 0;
 uint32_t last_heartbeat_time = 0;
 uint32_t last_display_time = 0;
 uint32_t last_can_send_time = 0;
-//static volatile uint8_t Key_Scan_Flag = 0;
+static volatile uint8_t Key_Scan_Flag = 0U;
 
 /* CAN_Test_Mode 修复 */
 static uint32_t g_last_rx_id = 0;
@@ -232,11 +232,13 @@ void Remote_Control_Mode(void)
     
     while(system_state == REMOTE_CONTROL)
 	{
-		/*if (Key_Scan_Flag)
+		while (Key_Scan_Flag > 0U)
 		{
-			Key_Scan_Flag = 0;
+			__disable_irq();              /* 临界区：read-modify-write 防中断竞态 */
+			Key_Scan_Flag--;
+			__enable_irq();
 			Key_Scan();
-		}*/
+		}
 		
 		HeartBeat_Manager();
 		
@@ -349,11 +351,13 @@ void Sensor_Display_Mode(void)
     
     while(system_state == SENSOR_DISPLAY)
 	{
-		/*if (Key_Scan_Flag)
+		while (Key_Scan_Flag > 0U)
 		{
-			Key_Scan_Flag = 0;
+			__disable_irq();              /* 临界区：read-modify-write 防中断竞态 */
+			Key_Scan_Flag--;
+			__enable_irq();
 			Key_Scan();
-		}*/
+		}
 		
 		HeartBeat_Manager();
 		
@@ -428,11 +432,13 @@ void System_Monitor_Mode(void)
     
     while(system_state == SYSTEM_MONITOR)
 	{
-		/*if (Key_Scan_Flag)
+		while (Key_Scan_Flag > 0U)
 		{
-			Key_Scan_Flag = 0;
+			__disable_irq();              /* 临界区：read-modify-write 防中断竞态 */
+			Key_Scan_Flag--;
+			__enable_irq();
 			Key_Scan();
-		}*/
+		}
 		
 		HeartBeat_Manager();
 		
@@ -520,11 +526,13 @@ void CAN_Test_Mode(void)
     
     while(system_state == CAN_TEST)
 	{
-		/*if (Key_Scan_Flag)
+		while (Key_Scan_Flag > 0U)
 		{
-			Key_Scan_Flag = 0;
+			__disable_irq();              /* 临界区：read-modify-write 防中断竞态 */
+			Key_Scan_Flag--;
+			__enable_irq();
 			Key_Scan();
-		}*/
+		}
 		
 		HeartBeat_Manager();
 		
@@ -629,11 +637,13 @@ void Parameter_Setting_Mode(void)
     
     while(system_state == PARAM_SETTING)
 	{
-		/*if (Key_Scan_Flag)
+		while (Key_Scan_Flag > 0U)
 		{
-			Key_Scan_Flag = 0;
+			__disable_irq();              /* 临界区：read-modify-write 防中断竞态 */
+			Key_Scan_Flag--;
+			__enable_irq();
 			Key_Scan();
-		}*/
+		}
 		
 		HeartBeat_Manager();
 		
@@ -964,11 +974,13 @@ int main(void)
 	
     while(1) 
 	{
-		/*if (Key_Scan_Flag)
+		while (Key_Scan_Flag > 0U)
 		{
-			Key_Scan_Flag = 0;
+			__disable_irq();              /* 临界区：read-modify-write 防中断竞态 */
+			Key_Scan_Flag--;
+			__enable_irq();
 			Key_Scan();
-		}*/
+		}
 		Key_Handler();
 		
 		HeartBeat_Manager();
@@ -1082,8 +1094,11 @@ void TIM2_IRQHandler(void)
 	if (TIM_GetITStatus(TIM2, TIM_IT_Update) == SET)
 	{
 		Tick_ms ++;
-		//Key_Scan_Flag = 1;
-		Key_Scan();
+		/* 计数器累加（不是置位）；uint8_t ++ 在 Cortex-M3 单字节 STRB 原子 */
+		if (Key_Scan_Flag < 0xFFU)
+		{
+			Key_Scan_Flag++;
+		}
 		
 		TIM_ClearITPendingBit(TIM2, TIM_IT_Update);
 	}
