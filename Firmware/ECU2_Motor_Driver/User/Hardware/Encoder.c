@@ -11,6 +11,12 @@
 #define ENCODER_PIN_A            GPIO_Pin_6  // PA6 - TIM3_CH1
 #define ENCODER_PIN_B            GPIO_Pin_7  // PA7 - TIM3_CH2
 
+/* 编码器计数周期宏统一
+ * TIM_Period = 65535 (0xFFFF) → 计数状态总数 = 65536；中点 = 32768 支持正反转 */
+#define ENCODER_TIM_PERIOD      65535U
+#define ENCODER_TIM_MODULO      (ENCODER_TIM_PERIOD + 1U)
+#define ENCODER_TIM_MIDPOINT    (ENCODER_TIM_MODULO / 2U)
+
 // 编码器全局变量
 volatile Encoder_Data encoder_data = {0};
 static int32_t encoder_total_pulses = 0;    // 总脉冲数
@@ -38,7 +44,7 @@ void Encoder_Init(void)
     GPIO_Init(ENCODER_GPIO, &GPIO_InitStructure);
     
     // 3. 定时器基础配置
-    TIM_TimeBaseStructure.TIM_Period = 65535;  // 自动重装载值
+    TIM_TimeBaseStructure.TIM_Period = ENCODER_TIM_PERIOD;  // 自动重装载值
     TIM_TimeBaseStructure.TIM_Prescaler = 0;   // 预分频器
     TIM_TimeBaseStructure.TIM_ClockDivision = TIM_CKD_DIV1;
     TIM_TimeBaseStructure.TIM_CounterMode = TIM_CounterMode_Up;
@@ -62,7 +68,7 @@ void Encoder_Init(void)
     TIM_Cmd(ENCODER_TIM, ENABLE);
     
     // 7. 重置计数器
-    TIM_SetCounter(ENCODER_TIM, 32768);  // 设置为中间值，支持正反转
+    TIM_SetCounter(ENCODER_TIM, ENCODER_TIM_MIDPOINT);  // 设置为中间值，支持正反转
     
     // 8. 初始化编码器数据
     encoder_data.speed_rpm = 0;
@@ -93,17 +99,17 @@ int32_t Encoder_GetCount(void)
     }
 	else
 	{
-        diff = 65536 - encoder_last_count + count;
+        diff = ENCODER_TIM_PERIOD - encoder_last_count + count;
     }
     
     // 判断方向
-    if(diff > 32768)
+    if(diff > ENCODER_TIM_MIDPOINT)
 	{
         // 反转
-        diff = diff - 65536;
+        diff = diff - ENCODER_TIM_PERIOD;
     }
-	else if(diff < -32768)
-		diff += 65536;
+	else if(diff < -ENCODER_TIM_MIDPOINT)
+		diff += ENCODER_TIM_PERIOD;
     
     encoder_total_pulses += diff;
     encoder_last_count = count;
@@ -156,6 +162,12 @@ float Encoder_CalculateSpeed(uint16_t sample_time_ms)
     // 公式：转速(RPM) = (脉冲数 / (编码器线数 * 4)) * (60000 / 采样时间) / 减速比
     // 编码器11线，减速比10:1
     float speed_rpm = (pulse_diff / (11.0f * 4.0f)) * (60000.0f / elapsed_time) / 10.0f;
+	
+	/* 单次异常脉冲 (GPIO 抖动 / 丢脉冲 / 采样时间跳变) 不应当输出 99999 RPM 影响 PID */
+    #define ENCODER_RPM_MAX      2000.0f
+    if (speed_rpm >  ENCODER_RPM_MAX)  speed_rpm =  ENCODER_RPM_MAX;
+    if (speed_rpm < -ENCODER_RPM_MAX)  speed_rpm = -ENCODER_RPM_MAX;
+    #undef ENCODER_RPM_MAX
     
     // 更新数据
     encoder_data.speed_rpm = speed_rpm;
@@ -209,9 +221,9 @@ void Encoder_Calibrate(void)
     printf("Starting encoder calibration...\r\n");
     
     // 重置计数器
-    TIM_SetCounter(ENCODER_TIM, 32768);
+    TIM_SetCounter(ENCODER_TIM, ENCODER_TIM_MIDPOINT);
     encoder_total_pulses = 0;
-    encoder_last_count = 32768;
+    encoder_last_count = ENCODER_TIM_MIDPOINT;
     
     // 清空数据
     encoder_data.speed_rpm = 0;
