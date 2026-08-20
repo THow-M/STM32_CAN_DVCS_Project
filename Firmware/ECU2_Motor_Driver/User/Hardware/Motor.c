@@ -472,3 +472,32 @@ uint16_t Motor_GetCurrent(void)
 	
     return fake;
 }
+/* NTC 10kΩ / B=3950K 温度计算公式 (默认：下臂 NTC → GND 侧)
+ *  电路: Vcc(3.3V) --- R_fixed(10kΩ 1%) --- ADC_in --- NTC(10kΩ B3950K@25℃) --- GND
+ *  分压: V_adc = Vcc × Rntc / (R_fixed + Rntc)   →   Rntc = R_fixed × (ADC_MAX - adc) / adc
+ *  B值:   T[K] = 1 / ( 1/T0 + 1/B × ln(Rntc/R0) ),  T[℃] = T[K] - 273.15
+ *         T0=298.15K, R0=10000Ω, B=3950K
+ *  验证:  adc=2048 → Rntc=10k → T≈25℃;  adc=2940 → Rntc≈3.93k → T≈50℃
+ *
+ *  可选上臂 NTC（Vcc 侧）公式：Rntc = R_fixed × adc / (ADC_MAX - adc)
+ *
+ *  参考骨架（启用：下臂 NTC 时可取消注释并在 Motor_GetStatus 调它）：
+uint8_t NTC_Temperature_Calc(uint16_t adc_raw, float *temp_c)
+{
+    const float R0      = 10000.0f;
+    const float B       =  3950.0f;
+    const float T0_inv  = 1.0f / 298.15f;
+    const float B_inv   = 1.0f / B;
+    const float R_fixed = 10000.0f;
+    float rntc, inv_tk;
+    if (temp_c == NULL) return 1U;
+    if (adc_raw == 0U)   adc_raw = 1U;                  // 防除 0
+    if (adc_raw > ADC_MAX_VALUE)  adc_raw = ADC_MAX_VALUE;
+    rntc = R_fixed * (float)(ADC_MAX_VALUE - adc_raw) / (float)adc_raw;
+    if (rntc <= 0.0f) return 2U;
+    inv_tk = T0_inv + B_inv * logf(rntc / R0);
+    if (inv_tk <= 0.0f) return 3U;
+    *temp_c = (1.0f / inv_tk) - 273.15f;
+    return 0U;
+}
+*/
