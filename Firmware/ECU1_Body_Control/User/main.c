@@ -12,6 +12,9 @@
 #include <string.h>
 #include <stdlib.h>
 
+#define IWDG_TIMEOUT_RELOAD      ((uint16_t)0x0FFFU)
+#define IWDG_TIMEOUT_MS          (6552U)
+
 // 全局变量
 System_State system_state = SYSTEM_IDLE;
 uint8_t selected_menu = 0;
@@ -105,9 +108,14 @@ void System_Init(void)
     }
 	
 	/* 看门狗 */
+	/* IWDG 参数宏 & 计算注释
+	 * Tout(ms) = Reload × Prescaler / LSI_freq
+	 *          = 4095 × 64 / 40000 = 6.552 s ≈ 6552 ms
+	 * LSI 范围 30kHz~60kHz；最不利 (LSI=60kHz) Tout = 4095*64/60k ≈ 4.36s，仍 > 主循环喂狗间隔 (≤ 50ms×N)
+	 */
 	IWDG_WriteAccessCmd(IWDG_WriteAccess_Enable);
     IWDG_SetPrescaler(IWDG_Prescaler_64);   /* 40kHz/64 = 625Hz */
-    IWDG_SetReload(0x0FFF);                  /* ~6.55s 超时 */
+    IWDG_SetReload(IWDG_TIMEOUT_RELOAD);
     IWDG_ReloadCounter();
     IWDG_Enable();
     

@@ -4,7 +4,7 @@
 
 //extern volatile uint8_t MyCAN_RxFlag;
 
-#define CAN_RX_BUF_SIZE 8            // 接收环形缓冲区大小
+#define CAN_RX_BUF_SIZE 8U           // 接收环形缓冲区大小
 
 typedef struct
 {
@@ -25,18 +25,18 @@ typedef enum
 } CAN_BaudRate;
 
 // ECU节点ID
-#define NODE_ID_ECU1              0x01    // 车身控制
-#define NODE_ID_ECU2              0x02    // 电机驱动
-#define NODE_ID_ECU3              0x03    // 传感器单元
+#define NODE_ID_ECU1              0x01U    // 车身控制
+#define NODE_ID_ECU2              0x02U    // 电机驱动
+#define NODE_ID_ECU3              0x03U    // 传感器单元
 
 //报文ID定义
-#define MSG_ID_HEARTBEAT          0x100   //心跳包
-#define MSG_ID_SPEED_CMD          0x101   //速度指令
-#define MSG_ID_MOTOR_STATUS       0x102   //电机状态
-#define MSG_ID_SENSOR_DATA        0x103   //传感器数据
-#define MSG_ID_SYSTEM_CTRL        0x104   //系统控制
-#define MSG_ID_ERROR_REPORT       0x105   //错误报告
-#define MSG_ID_SENSOR_VOLTAGE     0x106
+#define MSG_ID_HEARTBEAT          0x100U   //心跳包
+#define MSG_ID_SPEED_CMD          0x101U   //速度指令
+#define MSG_ID_MOTOR_STATUS       0x102U   //电机状态
+#define MSG_ID_SENSOR_DATA        0x103U   //传感器数据
+#define MSG_ID_SYSTEM_CTRL        0x104U   //系统控制
+#define MSG_ID_ERROR_REPORT       0x105U   //错误报告
+#define MSG_ID_SENSOR_VOLTAGE     0x106U
 
 //数据结构定义
 #pragma pack(push,1)   //1字节对齐
