@@ -14,7 +14,7 @@
 // 假设：R1=10k, R2=2k, 12V时分压=12*(2/(10+2))=2V
 #define VOLTAGE_DIVIDER_RATIO  6.0f  // 12V/2V = 6
 #define ADC_REF_VOLTAGE        3.3f  // ADC参考电压
-#define ADC_RESOLUTION         4096  // 12位ADC
+#define ADC_RESOLUTION         4095U  // 12位ADC
 
 // 全局变量
 Voltage_Data voltage_data = {0};
@@ -136,13 +136,17 @@ void Voltage_Update(void)
         uint16_t avg_adc = sum / ADC_SAMPLE_COUNT;
         
         // 计算电压
-        // 步骤1: ADC电压 = ADC值 * 3.3V / 4096
+        // 步骤1: ADC电压 = ADC值 * 3.3V / 4095
         // 步骤2: 实际电压 = ADC电压 * 分压比
         float adc_voltage = avg_adc * ADC_REF_VOLTAGE / ADC_RESOLUTION;
         float actual_voltage = adc_voltage * voltage_calibration_factor;
+		
+		/* 物理钳制（ADC 异常毛刺不会输出 0/999V 导致上层显示乱） */
+        if (actual_voltage < 0.0f)   actual_voltage = 0.0f;
+        if (actual_voltage > 24.0f)  actual_voltage = 24.0f;
         
         // 转换为mV
-        voltage_data.voltage_mv = (uint16_t)(actual_voltage * 1000);
+        voltage_data.voltage_mv = (uint16_t)(actual_voltage * 1000.0f);
         voltage_data.voltage_v = actual_voltage;
         
         // 检查电压状态
@@ -160,18 +164,18 @@ void Voltage_Update(void)
         }
         
         // 计算电量百分比（假设12V系统）
-        if(voltage_data.voltage_v <= 10.0f)
+        /* 电池% 映射 11.0V (空) ↔ 14.4V (满) → 对应 12V 铅酸充放电曲线常用区间 */
+        if (voltage_data.voltage_v <= 11.0f)
 		{
-            voltage_data.battery_percent = 0;
-        }
-		else if(voltage_data.voltage_v >= 12.6f)
+			voltage_data.battery_percent = 0U;
+		}
+        else if (voltage_data.voltage_v >= 14.4f)
 		{
-            voltage_data.battery_percent = 100;
-        }
-		else
+			voltage_data.battery_percent = 100U;
+		}
+        else
 		{
-            // 10.0V-12.6V线性映射到0-100%
-            voltage_data.battery_percent = (uint8_t)((voltage_data.voltage_v - 10.0f) * 100 / 2.6f);
+            voltage_data.battery_percent = (uint8_t)((voltage_data.voltage_v - 11.0f) * 100.0f / 3.4f);
         }
         
         // 滤波处理

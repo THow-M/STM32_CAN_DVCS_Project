@@ -60,9 +60,9 @@ typedef struct
 } Voltage_Data;
 
 // 电压范围
-#define VOLTAGE_MIN     10.0f  // 最低电压
+#define VOLTAGE_MIN     8.0f   // 最低电压
 #define VOLTAGE_MAX     13.0f  // 最高电压
-#define ADC_SAMPLE_COUNT 10    // ADC采样次数
+#define ADC_SAMPLE_COUNT 10U   // ADC采样次数
 
 // 函数声明
 void Voltage_Init(void);
