@@ -33,6 +33,7 @@ static volatile uint8_t echo_rising_captured = 0;   /* 上升沿已捕获标志 
 static volatile uint32_t timeout_counter = 0;
 static volatile uint32_t last_timeout_log_time = 0;   /* 上次超时日志时间 */
 volatile uint8_t ultrasonic_data_ready = 0;
+static uint8_t us_anomaly_counter = 0U;	/* 超声波异常计数器；需连续 3 次触发才算真正异常（抑制单次 GPIO 抖动误报） */
 
 /** 函  数：超声波初始化
   * 参  数：无
@@ -221,7 +222,11 @@ void Ultrasonic_Calculate_Distance(void)
     
     if(echo_rising_captured != 0 || echo_end_time == 0 || echo_end_time <= echo_start_time)
     {
-        ultrasonic_data.valid = 0;
+		/* 异常计数，连续 3 次才置 valid=0，否则保持上次值 */
+        if (++us_anomaly_counter >= 3U)
+		{
+            ultrasonic_data.valid = 0;
+        }
         return;
     }
     
@@ -231,7 +236,10 @@ void Ultrasonic_Calculate_Distance(void)
     // 检查是否在有效范围内
     if(pulse_width < 116 || pulse_width > 23200)
 	{  // 2cm-400cm
-        ultrasonic_data.valid = 0;
+		if (++us_anomaly_counter >= 3U)
+		{
+            ultrasonic_data.valid = 0;
+        }
         return;
     }
 	
@@ -251,6 +259,7 @@ void Ultrasonic_Calculate_Distance(void)
     // 信号强度（基于脉冲宽度）
     ultrasonic_data.signal_strength = 100 - (pulse_width * 100 / 23200);
     
+	us_anomaly_counter = 0U;
     ultrasonic_data.valid = 1;
     
     /*printf("Distance: %dmm (%.1fcm)\r\n", 
