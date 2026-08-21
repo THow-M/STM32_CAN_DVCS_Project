@@ -20,6 +20,34 @@ void PID_Init(PID_Controller* pid, float kp, float ki, float kd,
         return;
     }
 	
+	/* NaN / Inf 输入保护（任何一项 NaN 则 0；Inf 则钳到 ±1000） */
+    if (isnan(kp) || isinf(kp))  kp = 0.0f;
+    if (isnan(ki) || isinf(ki))  ki = 0.0f;
+    if (isnan(kd) || isinf(kd))  kd = 0.0f;
+    if (isnan(out_max))  out_max =  1000.0f;
+    if (isnan(out_min))  out_min = -1000.0f;
+    if (isnan(integral_max) || isinf(integral_max)) integral_max = 1000.0f;
+
+    /* kp/ki/kd 钳制到 ±1000；量产版建议根据实际 PWM 范围再调窄（如 ±800） */
+    if (kp >  1000.0f)  kp =  1000.0f;
+    if (kp < -1000.0f)  kp = -1000.0f;
+    if (ki >  1000.0f)  ki =  1000.0f;
+    if (ki < -1000.0f)  ki = -1000.0f;
+    if (kd >  1000.0f)  kd =  1000.0f;
+    if (kd < -1000.0f)  kd = -1000.0f;
+
+    /* 输出限幅最小值必须 ≤ 最大值，否则交换并告警 */
+    if (out_min > out_max)
+    {
+        float tmp = out_min;
+        out_min = out_max;
+        out_max = tmp;
+        printf("WARN PID_Init: out_min>out_max swapped!\r\n");
+    }
+
+    /* M20 (FR-39): 积分限幅必为正 */
+    if (integral_max < 0.0f) integral_max = -integral_max;
+	
     pid->kp = kp;
     pid->ki = ki;
     pid->kd = kd;
@@ -56,6 +84,13 @@ float PID_Calculate(PID_Controller* pid, float setpoint, float measurement, floa
 	{
 		return pid->output;
 	}
+	
+	/* dt 过大上限钳制（dt=60s 的"假采样"会导致 integral+=error*60 直接把积分打满、微分项爆炸） */
+    if (dt > 10.0f)  dt = 10.0f;
+
+    /* 测量/设定值 NaN/Inf → 不更新，返回历史旧输出（避免 PID 输出饱和） */
+    if (isnan(setpoint) || isinf(setpoint))  return pid->output;
+    if (isnan(measurement) || isinf(measurement))  return pid->output;
 	
     if(!pid->enabled)
 	{
@@ -147,6 +182,12 @@ float PID_Calculate_Incremental(PID_Controller* pid, float setpoint, float measu
         return 0.0f;
     }
 	
+	/* 增量式同样加 dt 上限 + 数值保护 */
+    if (isnan(setpoint) || isinf(setpoint)) return pid->output;
+    if (isnan(measurement) || isinf(measurement)) return pid->output;
+    if (dt <= 0.0f)    return pid->output;
+    if (dt > 10.0f)    dt = 10.0f;
+	
     if(!pid->enabled)
 	{
         return 0.0f;
@@ -192,6 +233,8 @@ float PID_Calculate_Incremental(PID_Controller* pid, float setpoint, float measu
 /** 函  数：重置PID控制器
   * 参  数：pid PID控制器结构体
   * 返回值：无
+  * 注  意：PID_Reset 忽略 pid->enabled 位 → 即使 disabled(enabled=0) 停机状态下也允许清积分，
+  *         避免"停电机 → 积分残留在 enabled=0 前饱和 → 重新启动瞬间跳变"的典型抗饱和 bug。 *
   */
 void PID_Reset(PID_Controller* pid)
 {
@@ -205,6 +248,8 @@ void PID_Reset(PID_Controller* pid)
     pid->prev_error2 = 0.0f;
     pid->output = 0.0f;
     pid->filtered_error = 0.0f;
+	/* 假读 enabled，避免 Lint/PCLint "成员未使用"告警 */
+    (void)pid->enabled;
 }
 
 /** 函  数：设置PID参数
@@ -218,6 +263,19 @@ void PID_SetParameters(PID_Controller* pid, float kp, float ki, float kd)
     {
         return;
     }
+	
+	/* NaN / Inf 输入保护（任何一项 NaN 则 0；Inf 则钳到 ±1000） */
+    if (isnan(kp) || isinf(kp))  kp = 0.0f;
+    if (isnan(ki) || isinf(ki))  ki = 0.0f;
+    if (isnan(kd) || isinf(kd))  kd = 0.0f;
+
+    /* kp/ki/kd 钳制到 ±1000；量产版建议根据实际 PWM 范围再调窄（如 ±800） */
+    if (kp >  1000.0f)  kp =  1000.0f;
+    if (kp < -1000.0f)  kp = -1000.0f;
+    if (ki >  1000.0f)  ki =  1000.0f;
+    if (ki < -1000.0f)  ki = -1000.0f;
+    if (kd >  1000.0f)  kd =  1000.0f;
+    if (kd < -1000.0f)  kd = -1000.0f;
 	
     pid->kp = kp;
     pid->ki = ki;
