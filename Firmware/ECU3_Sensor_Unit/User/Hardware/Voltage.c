@@ -529,3 +529,40 @@ uint8_t FlashEE_WriteU32(uint32_t offset, uint32_t val)
     return (st == FLASH_COMPLETE) ? 1U : 0U;
 }
 */
+
+/* Wear Leveling 两槽轮转（寿命 ≈ ×2）
+ * 一页 1024B → 每槽 512B，槽头 8B: [Magic(4B)][WriteCount(4B)]，每槽数据区 504B
+ * 读取：挑两槽中 (Magic 有效) && (WriteCount 大) 的那个
+ * 写入：挑 WriteCount 小的那个；避免同一物理地址反复擦写
+ * 参考: STM32F103 Flash 擦写寿命 ≥ 10k cycles → 2 槽 ≈ 20k 次参数保存
+ */
+/*
+#define FLASH_EE_SLOT_SIZE     512U
+#define FLASH_EE_WC_OFF        4U   // WriteCount 在每槽的 offset 4-7
+
+static uint32_t FlashEE_ReadWC(uint8_t slot)
+{
+    return FlashEE_ReadU32((uint32_t)slot * FLASH_EE_SLOT_SIZE + FLASH_EE_WC_OFF);
+}
+*/
+/* 返回活跃槽号 (0 或 1)；都无效返回 0xFF */
+/*static uint8_t FlashEE_PickActiveSlot(void)
+{
+    uint32_t wc0 = FlashEE_ReadWC(0U);
+    uint32_t wc1 = FlashEE_ReadWC(1U);
+    uint8_t  m0 = (FlashEE_ReadU32(0U) == FLASH_EE_MAGIC) ? 1U : 0U;
+    uint8_t  m1 = (FlashEE_ReadU32(FLASH_EE_SLOT_SIZE) == FLASH_EE_MAGIC) ? 1U : 0U;
+    if (m0 == 0U && m1 == 0U) return 0xFFU;
+    if (m0 == 0U) return 1U;
+    if (m1 == 0U) return 0U;
+    return (wc0 >= wc1) ? 0U : 1U;   // WC 大的为活跃（最新写入）
+}*/
+
+/* 挑下一次写入槽号（与活跃槽错开 → 轮换）
+uint8_t FlashEE_PickNextWriteSlot(void)
+{
+    uint8_t a = FlashEE_PickActiveSlot();
+    if (a == 0xFFU) return 0U;
+    return (a == 0U) ? 1U : 0U;
+}
+*/
