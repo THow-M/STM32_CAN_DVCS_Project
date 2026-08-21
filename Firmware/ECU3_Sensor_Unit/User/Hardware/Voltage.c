@@ -58,11 +58,31 @@ void Voltage_Init(void)
     ADC_Cmd(ADC1, ENABLE);
     
     // 6. ADC校准
-    ADC_ResetCalibration(ADC1);
-    while(ADC_GetResetCalibrationStatus(ADC1));
-    
-    ADC_StartCalibration(ADC1);
-    while(ADC_GetCalibrationStatus(ADC1));
+	ADC_ResetCalibration(ADC1);
+	{
+		uint32_t t0 = HAL_GetTick();
+		while(ADC_GetResetCalibrationStatus(ADC1))
+		{
+			if ((HAL_GetTick() - t0) > 100U)  /* 100ms 超时 */
+			{
+				printf("WARN: ADC ResetCalibration timeout!\r\n");
+				break;
+			}
+		}
+	}
+	
+	ADC_StartCalibration(ADC1);
+	{
+		uint32_t t0 = HAL_GetTick();
+		while(ADC_GetCalibrationStatus(ADC1))
+		{
+			if ((HAL_GetTick() - t0) > 100U)  /* 100ms 超时 */
+			{
+				printf("WARN: ADC Calibration timeout!\r\n");
+				break;
+			}
+		}
+	}
     
     printf("Voltage detection initialized\r\n");
 }
