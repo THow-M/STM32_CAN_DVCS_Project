@@ -43,6 +43,19 @@ uint8_t heartbeat_status[NODE_NUM] = {0};
 uint32_t heartbeat_time[NODE_NUM] = {0};
 uint16_t sensor_voltage_mv = 0U;
 
+/* 三 ECU 心跳监控表。
+ * 丢失阈值 = 3× 周期（默认 3×1s=3s）；推荐 3× 而非 5× 的原因是电机运行中断 CAN 3s 已经是安全上限。 */
+#define HEARTBEAT_NODE_COUNT        3U   // 0=ECU1(自身) 1=ECU2 2=ECU3
+#define HEARTBEAT_TIMEOUT_MULT      3U
+
+typedef struct {
+    uint32_t last_seen_ms;            /* 最近一次收到该节点心跳的 HAL_GetTick() */
+    uint8_t  alive;                   /* 0=失联 1=在网 */
+    uint8_t  prev_status;             /* 上次报的 status 字节 (0正常/1告警/2错误) */
+} HBM_Monitor_t;
+
+static HBM_Monitor_t hbm_nodes[HEARTBEAT_NODE_COUNT];
+
 // 菜单项
 const char *menu_items[] = {
     "1.Motor Ctrl",                      //远程控制电机
@@ -755,6 +768,27 @@ void HeartBeat_Manager(void)
         LED1_Turn();
     }
 	heartbeat_time[NODE_ID - 1] = current_time;
+	
+	/* 巡检 ECU2/ECU3 心跳 */
+    {
+        uint32_t period = g_heartbeat_period_ms;
+        if (period == 0U)  period = 1000U;   //配置异常时兜底 1 秒
+        uint32_t tout = HEARTBEAT_TIMEOUT_MULT * period;
+        uint8_t i;
+        for (i = 1U; i < HEARTBEAT_NODE_COUNT; i++)
+		{     /* idx1=ECU2 idx2=ECU3 */
+            if (hbm_nodes[i].alive != 0U)
+			{
+                if ((HAL_GetTick() - hbm_nodes[i].last_seen_ms) > tout)
+				{
+                    hbm_nodes[i].alive = 0U;
+                    /* 诊断打印 + 通过 CAN 上报 DTC 0xE102 (ECU2) / 0xE103 (ECU3)，见 M28 DTC 简表 */
+                    printf("HEARTBEAT: node ECU%u MISSING! tout=%lums\r\n", (unsigned)(i+1U), (unsigned long)tout);
+                    MyCAN_Send_ErrorReport(NODE_ID_ECU1, 1U, (uint16_t)(0xE100U + (i+1U)));
+                }
+            }
+        }
+    }
     
     // 检查其他节点心跳
     static uint32_t last_check_time = 0;
@@ -802,6 +836,14 @@ void CAN_Data_Handler(uint32_t id, uint8_t len, uint8_t* data)
             if (len < sizeof(HeartBeat_Data)) break;
             HeartBeat_Data hb;
             memcpy(&hb, data, sizeof(HeartBeat_Data));
+			/* 收到任何 ECU 心跳 → 更新监控表 */
+			if ((hb.node_id >= NODE_ID_ECU1) && (hb.node_id <= NODE_ID_ECU3))
+			{
+				uint8_t idx = (uint8_t)(hb.node_id - NODE_ID_ECU1);       // 0/1/2
+				hbm_nodes[idx].last_seen_ms = HAL_GetTick();
+				hbm_nodes[idx].alive = 1U;
+				hbm_nodes[idx].prev_status = hb.status;
+			}
             if (hb.node_id >= 1U && hb.node_id <= NODE_NUM)
             {
                 heartbeat_time[hb.node_id - 1] = HAL_GetTick();
