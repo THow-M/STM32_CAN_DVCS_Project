@@ -474,3 +474,58 @@ void Voltage_Test_All(void)
     printf("  Voltage Test Complete\r\n");
     printf("====================================\r\n\r\n");
 }
+
+/* EEPROM 抽象接口骨架（Flash 模拟 EEPROM）
+ * 硬件方案 A (默认 · 无需外部芯片): 内部 FLASH 倒数第二页 1KB 作为 EE
+ *   STM32F103C8T6: 64KB Flash → Page 62 = 0x0800_F800 ~ 0x0800_FBFF (Page 62) ; Page 63 = 0x0800_FC00~ (若存在 Bootloader 别碰)
+ * 硬件方案 B: 外部 I2C EEPROM 24C02 @ 0xA0 (SCL=PB6, SDA=PB7) → 256 字节
+ *
+ * 参数存储地址映射（总大小 < 200 字节，都放得下）：
+ *  Offset  0-3 : Magic 0x55AA55AA (有效性标记)
+ *  Offset  4   : can_baudrate (0/1/2/3)
+ *  Offset  5-6 : heartbeat_period_s (uint16_t)
+ *  Offset  8-11: voltage_calibration_factor (float 4B)   ← Voltage_Calibrate 时写入
+ *  Offset 12-15: PID kp (float)
+ *  Offset 16-19: PID ki (float)
+ *  Offset 20-23: PID kd (float)
+ *  Offset 32-39: 7 字节 VIN 末 7 位 (UDS DID F18C)
+ *  Offset 48-239: DTC 快照区（10B/条 × 19 条 = 190B），与 M28 联动
+ */
+/*
+#include <stddef.h>
+
+#define FLASH_EE_PAGE_SIZE       1024U
+#define FLASH_EE_BASE            (0x08000000UL + (62UL * FLASH_EE_PAGE_SIZE))   // 选 Page 62
+#define FLASH_EE_MAGIC           0x55AA55AAUL
+*/
+/* 读取 uint32_t（直接指针读取，Flash 0-wait-state OK） */
+/*static uint32_t FlashEE_ReadU32(uint32_t offset)
+{
+    if (offset > (FLASH_EE_PAGE_SIZE - 4U)) return 0U;
+    return *(volatile uint32_t*)(FLASH_EE_BASE + offset);
+}
+
+static uint8_t FlashEE_VerifyMagic(void)
+{
+    return (FlashEE_ReadU32(0U) == FLASH_EE_MAGIC) ? 1U : 0U;
+}*/
+
+/* ========= 完整 WriteU32 骨架（量产启用前取消注释 & 加临界区） =========
+uint8_t FlashEE_WriteU32(uint32_t offset, uint32_t val)
+{
+    FLASH_Status st;
+    if (offset > (FLASH_EE_PAGE_SIZE - 4U)) return 0U;
+    if ((offset & 0x3U) != 0U) return 0U;        // 必须 4 字节对齐
+    uint32_t primask = __get_PRIMASK();
+    __disable_irq();                             // 擦写期间关中断（20~50ms）
+    FLASH_Unlock();
+    FLASH_ClearFlag(FLASH_FLAG_EOP | FLASH_FLAG_PGERR | FLASH_FLAG_WRPRTERR);
+    // 注意：全页擦除! 真启用前务必先备份整页 RAM buffer 再写回其他字段!
+    st = FLASH_ErasePage(FLASH_EE_BASE);
+    if (st != FLASH_COMPLETE) { FLASH_Lock(); if(!primask)__enable_irq(); return 0U; }
+    st = FLASH_ProgramWord(FLASH_EE_BASE + offset, val);
+    FLASH_Lock();
+    if (!primask) __enable_irq();
+    return (st == FLASH_COMPLETE) ? 1U : 0U;
+}
+*/
