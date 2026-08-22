@@ -30,6 +30,10 @@
 #define DIR_PIN_IN2     GPIO_Pin_1
 #define DIR_GPIO_CLK    RCC_APB2Periph_GPIOB
 
+static uint8_t over_temp_ramp_active = 0U;
+static int16_t over_temp_ramp_speed = 1000;
+static uint32_t over_temp_last_step = 0U;
+
 Motor_Control motor_control = {0};
 
 
@@ -331,6 +335,26 @@ uint8_t Motor_ProtectionCheck(void)
 			}
 		}
 	}
+	
+	if (over_temp_ramp_active)
+	{
+		if ((HAL_GetTick() - over_temp_last_step) >= 100U)
+		{
+			over_temp_last_step = HAL_GetTick();
+			over_temp_ramp_speed -= 100;
+			if (over_temp_ramp_speed <= 0)
+			{
+				over_temp_ramp_speed = 0;
+				over_temp_ramp_active = 0U;
+				Motor_SetSpeed(0, MOTOR_STOP);
+			}
+			else
+			{
+				Motor_SetSpeed(over_temp_ramp_speed, motor_control.direction);
+			}
+		}
+	}
+	
     return errors;
 }
 
@@ -347,6 +371,9 @@ void Motor_ErrorHandler(uint8_t error_code)
             Motor_EmergencyStop();
             break;
         case ERROR_OVER_TEMP:
+			over_temp_ramp_active = 1U;
+			over_temp_ramp_speed = 1000;
+			over_temp_last_step = HAL_GetTick();
             // 缓慢减速
             for (int16_t i = 1000; i >= 0; i -= 100)
 			{
@@ -374,7 +401,7 @@ void Motor_ErrorHandler(uint8_t error_code)
   */
 Motor_Status Motor_GetStatus(void)
 {
-    Motor_Status st;
+    Motor_Status st = {0};
     st.speed = motor_control.current_speed;
     st.target_speed = motor_control.target_speed;
     st.direction = motor_control.direction;
