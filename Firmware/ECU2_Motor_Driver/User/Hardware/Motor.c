@@ -364,7 +364,7 @@ uint8_t Motor_ProtectionCheck(void)
   */
 void Motor_ErrorHandler(uint8_t error_code)
 {
-    printf("Motor error: 0x%02X\n", error_code);
+    printf("Motor error: 0x%02X\r\n", error_code);
     switch (error_code)
 	{
         case ERROR_OVER_CURRENT:
@@ -432,7 +432,7 @@ float Motor_GetSpeed(void)
   */
 void Motor_AutoTune(void)
 {
-    printf("Auto-tuning started...\n");
+    printf("Auto-tuning started...\r\n");
     motor_control.state = MOTOR_STATE_CALIBRATING;
 
     // Step 1: 测试最大正向速度
@@ -440,7 +440,7 @@ void Motor_AutoTune(void)
     Delay_ms(2000);
     Encoder_Data enc = Encoder_GetData();
     float max_fwd = enc.speed_rpm;
-    printf("Max forward speed: %.1f RPM\n", max_fwd);
+    printf("Max forward speed: %.1f RPM\r\n", max_fwd);
     Motor_SetSpeed(0, MOTOR_STOP);
     Delay_ms(1000);
 
@@ -449,7 +449,7 @@ void Motor_AutoTune(void)
     Delay_ms(2000);
     enc = Encoder_GetData();
     float max_rev = -enc.speed_rpm;
-    printf("Max reverse speed: %.1f RPM\n", max_rev);
+    printf("Max reverse speed: %.1f RPM\r\n", max_rev);
     Motor_SetSpeed(0, MOTOR_STOP);
     Delay_ms(1000);
 
@@ -461,10 +461,10 @@ void Motor_AutoTune(void)
     }
 	else
 	{
-        printf("Speed too low for auto-tune.\n");
+        printf("Speed too low for auto-tune.\r\n");
     }
     motor_control.state = MOTOR_STATE_IDLE;
-    printf("Auto-tuning done.\n");
+    printf("Auto-tuning done.\r\n");
 }
 
 /** 函  数：电机诊断报告
@@ -473,19 +473,19 @@ void Motor_AutoTune(void)
   */
 void Motor_Diagnostic(void)
 {
-    printf("=== Motor Driver Diagnostic ===\n");
+    printf("=== Motor Driver Diagnostic ===\r\n");
     Motor_Status st = Motor_GetStatus();
-    printf("Control mode: %s\n", control_mode == CONTROL_MODE_MANUAL ? "Manual" : "Auto");
-    printf("State: %d\n", st.state);
-    printf("Target speed: %d RPM\n", st.target_speed);
-    printf("Actual speed: %d RPM\n", st.speed);
-    printf("Direction: %d\n", st.direction);
-    printf("Error code: 0x%02X\n", st.error_code);
-    printf("Fault count: %d\n", motor_control.error_count);
-    printf("PID integral: %.2f\n", speed_pid.integral);
-    printf("PID output: %.2f\n", speed_pid.output);
-    printf("Current: %dmA\n", Motor_GetCurrent());
-    printf("==============================\n");
+    printf("Control mode: %s\r\n", control_mode == CONTROL_MODE_MANUAL ? "Manual" : "Auto");
+    printf("State: %d\r\n", st.state);
+    printf("Target speed: %d RPM\r\n", st.target_speed);
+    printf("Actual speed: %d RPM\r\n", st.speed);
+    printf("Direction: %d\r\n", st.direction);
+    printf("Error code: 0x%02X\r\n", st.error_code);
+    printf("Fault count: %d\r\n", motor_control.error_count);
+    printf("PID integral: %.2f\r\n", speed_pid.integral);
+    printf("PID output: %.2f\r\n", speed_pid.output);
+    printf("Current: %dmA\r\n", Motor_GetCurrent());
+    printf("==============================\r\n");
 }
 
 /** 函  数：获取电机电流
