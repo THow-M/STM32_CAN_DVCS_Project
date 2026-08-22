@@ -255,9 +255,10 @@ void Remote_Control_Mode(void)
 	{
 		while (Key_Scan_Flag > 0U)
 		{
-			__disable_irq();              /* 临界区：read-modify-write 防中断竞态 */
+			uint32_t primask = __get_PRIMASK();   /* 保存中断状态 */
+			__disable_irq();
 			Key_Scan_Flag--;
-			__enable_irq();
+			if (primask == 0U) { __enable_irq(); }  /* 仅原状态为开才恢复 */
 			Key_Scan();
 		}
 		
@@ -374,9 +375,10 @@ void Sensor_Display_Mode(void)
 	{
 		while (Key_Scan_Flag > 0U)
 		{
-			__disable_irq();              /* 临界区：read-modify-write 防中断竞态 */
+			uint32_t primask = __get_PRIMASK();   /* 保存中断状态 */
+			__disable_irq();
 			Key_Scan_Flag--;
-			__enable_irq();
+			if (primask == 0U) { __enable_irq(); }  /* 仅原状态为开才恢复 */
 			Key_Scan();
 		}
 		
@@ -455,9 +457,10 @@ void System_Monitor_Mode(void)
 	{
 		while (Key_Scan_Flag > 0U)
 		{
-			__disable_irq();              /* 临界区：read-modify-write 防中断竞态 */
+			uint32_t primask = __get_PRIMASK();   /* 保存中断状态 */
+			__disable_irq();
 			Key_Scan_Flag--;
-			__enable_irq();
+			if (primask == 0U) { __enable_irq(); }  /* 仅原状态为开才恢复 */
 			Key_Scan();
 		}
 		
@@ -549,9 +552,10 @@ void CAN_Test_Mode(void)
 	{
 		while (Key_Scan_Flag > 0U)
 		{
-			__disable_irq();              /* 临界区：read-modify-write 防中断竞态 */
+			uint32_t primask = __get_PRIMASK();   /* 保存中断状态 */
+			__disable_irq();
 			Key_Scan_Flag--;
-			__enable_irq();
+			if (primask == 0U) { __enable_irq(); }  /* 仅原状态为开才恢复 */
 			Key_Scan();
 		}
 		
@@ -660,9 +664,10 @@ void Parameter_Setting_Mode(void)
 	{
 		while (Key_Scan_Flag > 0U)
 		{
-			__disable_irq();              /* 临界区：read-modify-write 防中断竞态 */
+			uint32_t primask = __get_PRIMASK();   /* 保存中断状态 */
+			__disable_irq();
 			Key_Scan_Flag--;
-			__enable_irq();
+			if (primask == 0U) { __enable_irq(); }  /* 仅原状态为开才恢复 */
 			Key_Scan();
 		}
 		
@@ -1026,9 +1031,10 @@ int main(void)
 	{
 		while (Key_Scan_Flag > 0U)
 		{
-			__disable_irq();              /* 临界区：read-modify-write 防中断竞态 */
+			uint32_t primask = __get_PRIMASK();   /* 保存中断状态 */
+			__disable_irq();
 			Key_Scan_Flag--;
-			__enable_irq();
+			if (primask == 0U) { __enable_irq(); }  /* 仅原状态为开才恢复 */
 			Key_Scan();
 		}
 		Key_Handler();
