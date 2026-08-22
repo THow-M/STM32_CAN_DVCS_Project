@@ -369,10 +369,9 @@ void Sensor_Anomaly_Detection(void)
     
     // 检查姿态角度
 	static uint32_t last_anomaly_print = 0;
-	uint32_t current_time = 0;
+	uint32_t current_time = HAL_GetTick();
     if(fabs(sensor_fusion.roll) > 45.0f || fabs(sensor_fusion.pitch) > 45.0f)
 	{
-		current_time = HAL_GetTick();
 		if (current_time - last_anomaly_print > 1000U)
 		{
 			last_anomaly_print = current_time;
@@ -689,6 +688,8 @@ void Communication_Handler(void)
   */
 void CAN_Data_Handler(uint32_t id, uint8_t len, uint8_t* data)
 {
+	if (data == NULL)  return;
+	
     switch(id)
 	{
         case MSG_ID_HEARTBEAT:
