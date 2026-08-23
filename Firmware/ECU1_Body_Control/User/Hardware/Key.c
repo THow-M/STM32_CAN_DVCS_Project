@@ -99,6 +99,7 @@ uint8_t Key_Check(uint8_t Flag)
 {
 	for(uint8_t i = 0; i < KEY_COUNT; i++)
 	{
+		uint32_t primask = __get_PRIMASK();
 		__disable_irq();  /* 临界区保护 */
 		if(Key_Flag[i] & Flag)
 		{
@@ -106,7 +107,7 @@ uint8_t Key_Check(uint8_t Flag)
 			{
 				Key_Flag[i] &= ~Flag;
 			}
-			__enable_irq();
+			if(primask == 0U) { __enable_irq(); }
 			
 			switch(i)
 			{
@@ -123,7 +124,7 @@ uint8_t Key_Check(uint8_t Flag)
 			}
 			
 		}
-		__enable_irq();
+		if(primask == 0U) { __enable_irq(); }
 	}
 
 	return 0;

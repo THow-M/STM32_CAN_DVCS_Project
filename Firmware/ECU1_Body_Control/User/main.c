@@ -1017,12 +1017,9 @@ void CAN_Data_Handler(uint32_t id, uint8_t len, uint8_t* data)
 		}
     }
 	
-	static uint32_t g_last_can_id = 0;
-	static uint8_t g_last_can_len = 0;
-	static uint8_t g_last_can_data[8] = {0};
-	g_last_can_id = id;
-	g_last_can_len = len;
-	memcpy(g_last_can_data, data, len < 8 ? len : 8);
+	g_last_rx_id = id;
+	g_last_rx_len = len;
+	memcpy(g_last_rx_data, data, len < 8 ? len : 8);
 	
 	g_rx_updated = 1;
 }
