@@ -14,6 +14,7 @@
 
 #define IWDG_TIMEOUT_RELOAD      ((uint16_t)0x0FFFU)
 #define IWDG_TIMEOUT_MS          (6552U)
+#define DIRECTION_SWITCH_TIMEOUT_MS  2000U  /* 方向切换超时 2 秒 */
 
 // 全局变量
 System_State system_state = SYSTEM_IDLE;
@@ -247,7 +248,7 @@ void Remote_Control_Mode(void)
     uint8_t direction = 1;  // 1=正转
 	static uint8_t direction_switching = 0U;
 	static uint8_t pending_direction = 0U;
-	static uint32_t switch_start = 0U;
+	static uint32_t switch_start_time = 0U;
     
     system_state = REMOTE_CONTROL;
     
@@ -296,17 +297,25 @@ void Remote_Control_Mode(void)
 		{
 			direction_switching = 1U;
 			pending_direction = (direction == 1) ? 2 : 1;
-			switch_start = HAL_GetTick();
+			switch_start_time = HAL_GetTick();
 			/* 立即发送停止指令 */
 			MyCAN_Send_SpeedCmd(0, 0, 100);
 		}
 		
-		if (direction_switching &&
-			(HAL_GetTick() - switch_start >= 200U) &&
-			(abs(motor_status.actual_speed) <= 10))
+		if (direction_switching)
 		{
-			direction = pending_direction;
-			direction_switching = 0U;
+			if (abs(motor_status.actual_speed) <= 10)
+			{
+				direction = pending_direction;
+				direction_switching = 0U;
+			}
+			else if (HAL_GetTick() - switch_start_time >= DIRECTION_SWITCH_TIMEOUT_MS)
+			{
+				/* 超时强制切换，避免永久卡住 */
+				direction = pending_direction;
+				direction_switching = 0U;
+				printf("Direction switch timeout, forced\r\n");
+			}
 		}
         
         // 发送速度指令
