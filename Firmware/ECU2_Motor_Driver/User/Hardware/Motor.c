@@ -112,12 +112,10 @@ void Motor_SetSpeed(int16_t speed, uint8_t direction)
             motor_control.state = MOTOR_STATE_BRAKE;
             break;
 		default:
-			/* 非法方向 → 直接操作寄存器安全停机
-			 * 停机语义：IN1=IN2=1 (刹车)，速度=0，比滑行更安全 */
-			GPIO_WriteBit(GPIOA, GPIO_Pin_4, Bit_SET);
-			GPIO_WriteBit(GPIOA, GPIO_Pin_5, Bit_SET);
-			TIM_SetCompare1(TIM2, 0U);
-			/* 非侵入式打印一次，便于排查错误方向来源 */
+			/* 非法方向 → 强制刹车 */
+			GPIO_SetBits(DIR_PORT, DIR_PIN_IN1 | DIR_PIN_IN2);
+			PWM_SetCompare1(0);
+			motor_control.state = MOTOR_STATE_BRAKE;
 			printf("WARN: Motor_SetSpeed invalid dir=%u, forced STOP\r\n", (unsigned)direction);
 			break;
     }
