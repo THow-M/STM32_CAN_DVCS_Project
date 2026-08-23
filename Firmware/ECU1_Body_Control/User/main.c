@@ -985,8 +985,11 @@ void CAN_Data_Handler(uint32_t id, uint8_t len, uint8_t* data)
 				/* ---- 触发安全机制：严重错误进入 SYSTEM_ERROR ---- */
 				if (err.error_type & (ERROR_MOTOR_FAULT | ERROR_OVERCURRENT | ERROR_WATCHDOG))
 				{
-					printf("CRITICAL FAULT: Entering SYSTEM_ERROR state\r\n");
+					/* 先发送停止指令，再进入错误状态 */
+					MyCAN_Send_SpeedCmd(0, 0, 100);
+					Delay_ms(5);  /* 等待 CAN 发送完成 */
 					system_state = SYSTEM_ERROR;
+					printf("ECU2 critical fault 0x%04X, motor stopped\r\n", err.error_type);
 				}
 			}
 			break;
