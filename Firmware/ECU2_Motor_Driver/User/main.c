@@ -298,12 +298,13 @@ void Communication_Handler(void)
         //LEDx_OFF();
         
         // 如果长时间没有收到CAN消息，切换到手动模式
-        if(control_mode == CONTROL_MODE_AUTO)
+        printf("CAN disconnected, stopping motor\r\n");
+		Motor_SetTargetSpeed(0, MOTOR_STOP);
+		if(control_mode == CONTROL_MODE_AUTO)
 		{
-            printf("CAN disconnected, switching to manual mode\r\n");
-            control_mode = CONTROL_MODE_MANUAL;
-            Motor_SetTargetSpeed(0, MOTOR_STOP);
-        }
+			control_mode = CONTROL_MODE_MANUAL;
+		}
+		system_state = SYS_IDLE;
     }
 }
 
