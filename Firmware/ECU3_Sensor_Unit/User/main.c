@@ -224,6 +224,15 @@ void Sensor_Self_Test(void)
  */
 void Sensor_Update_All(void)
 {
+	/* 先排空 CAN FIFO，避免 I2C 阻塞期间溢出 */
+	uint32_t rx_id;
+	uint8_t  rx_data[8];
+	uint8_t  rx_len;
+	while(MyCAN_Receive_Message(&rx_id, &rx_len, rx_data) != 0U)
+	{
+		CAN_Data_Handler(rx_id, rx_len, rx_data);
+	}
+	
 	/* 1. 更新 MPU6050（可改为 DMA+中断） */
 	if (MPU6050_Read_RawData() != 0U)
     {
