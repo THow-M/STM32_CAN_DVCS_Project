@@ -980,6 +980,8 @@ void Error_Handler(void)
         // 尝试重新初始化传感器
         if(error_code & ERROR_MPU6050_FAIL)
 		{
+			/* 错误恢复前先喂狗，避免 Init 阻塞导致 IWDG 复位 */
+			IWDG_ReloadCounter();
             printf("Reinitializing MPU6050...\r\n");
             if(MPU6050_Init())
 			{
