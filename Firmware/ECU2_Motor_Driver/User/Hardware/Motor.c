@@ -83,7 +83,7 @@ void Motor_Init(uint16_t arr, uint16_t psc)
   */
 void Motor_SetSpeed(int16_t speed, uint8_t direction)
 {
-    if (speed > 1000) speed = 1000;
+    if (speed > 7199) speed = 7199;
     if (speed < 0) speed = 0;
     motor_control.current_speed = speed;
     motor_control.direction = direction;
@@ -159,7 +159,7 @@ void Motor_SetTargetSpeed(float speed_rpm, uint8_t direction)
 
     if (control_mode == CONTROL_MODE_MANUAL)
 	{
-        int16_t pwm = (int16_t)(speed_rpm * 7200.0f / MOTOR_MAX_SPEED);
+        int16_t pwm = (int16_t)(speed_rpm * 1000.0f / MOTOR_MAX_SPEED);
         if (pwm > 1000)
 			pwm = 1000;
         if (pwm < 0)
@@ -241,7 +241,7 @@ void Motor_RunPIDControl(void)
                               fabsf(enc.speed_rpm),
                               0.01f);
 	int16_t pwm = (int16_t)fabsf(output);
-	if (pwm > 1000) pwm = 1000;
+	if (pwm > 7199) pwm = 7199;
 	if (pwm < 0) pwm = 0;
 	
 	// 方向始终跟随目标方向，不随 PID 输出符号改变
