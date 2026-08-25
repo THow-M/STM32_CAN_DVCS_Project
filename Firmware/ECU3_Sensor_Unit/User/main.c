@@ -637,7 +637,7 @@ void Communication_Handler(void)
 	{  // 100ms发送一次
         last_can_send = current_time;
         
-        if(can_connected && sensor_fusion.valid)
+        if(can_connected)
 		{
             // 发送传感器数据
             MyCAN_Send_SensorData(sensor_fusion.distance_mm,
