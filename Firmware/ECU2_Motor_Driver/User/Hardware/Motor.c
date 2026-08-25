@@ -493,9 +493,9 @@ void Motor_Diagnostic(void)
   */
 uint16_t Motor_GetCurrent(void)
 {
-    static uint16_t fake = 0;
-	
-    return fake;
+	if (motor_control.state == MOTOR_STATE_RUN)
+        return 100U;  // 运行时返回100mA占位
+    return 0U;        // 停止时返回0
 }
 /* NTC 10kΩ / B=3950K 温度计算公式 (默认：下臂 NTC → GND 侧)
  *  电路: Vcc(3.3V) --- R_fixed(10kΩ 1%) --- ADC_in --- NTC(10kΩ B3950K@25℃) --- GND
