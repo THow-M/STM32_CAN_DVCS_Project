@@ -164,7 +164,7 @@ float Encoder_CalculateSpeed(uint16_t sample_time_ms)
     float speed_rpm = (pulse_diff / (11.0f * 4.0f)) * (60000.0f / elapsed_time) / 10.0f;
 	
 	/* 单次异常脉冲 (GPIO 抖动 / 丢脉冲 / 采样时间跳变) 不应当输出 99999 RPM 影响 PID */
-    #define ENCODER_RPM_MAX      2000.0f
+    #define ENCODER_RPM_MAX      10000.0f
     if      (speed_rpm >  ENCODER_RPM_MAX) { speed_rpm =  ENCODER_RPM_MAX; encoder_data.valid = 0; }
 	else if (speed_rpm < -ENCODER_RPM_MAX) { speed_rpm = -ENCODER_RPM_MAX; encoder_data.valid = 0; }
 	else                                   { encoder_data.valid = 1; }
