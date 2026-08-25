@@ -638,11 +638,16 @@ void CAN_Test_Mode(void)
 		if(g_rx_updated)
 		{
 			g_rx_updated = 0;
-			OLED_ShowHexNum(6*8, 16, g_last_rx_id, 3, OLED_8X16);
+			/*OLED_ShowHexNum(6*8, 16, g_last_rx_id, 3, OLED_8X16);
 			for(uint8_t i = 0; i < g_last_rx_len && i < 8; i++)
 			{
 				OLED_ShowHexNum(5*8 + 2*8*i, 32, g_last_rx_data[i], 2, OLED_8X16);
-			}
+			}*/
+		}
+		OLED_ShowHexNum(6*8, 16, g_last_rx_id, 3, OLED_8X16);
+		for(uint8_t i = 0; i < g_last_rx_len && i < 8; i++)
+		{
+			OLED_ShowHexNum(5*8 + 2*8*i, 32, g_last_rx_data[i], 2, OLED_8X16);
 		}
 		
 		OLED_Update();
