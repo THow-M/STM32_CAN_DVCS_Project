@@ -31,7 +31,7 @@ float target_speed_rpm = 0.0f;
 float actual_speed_rpm = 0.0f;
 float pid_output = 0.0f;
 uint8_t motor_direction = MOTOR_STOP;
-uint8_t control_mode = CONTROL_MODE_MANUAL;
+uint8_t control_mode = CONTROL_MODE_AUTO;
 
 // 定时器
 uint32_t last_pid_time = 0;
