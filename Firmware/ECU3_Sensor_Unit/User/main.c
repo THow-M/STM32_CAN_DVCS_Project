@@ -100,8 +100,8 @@ void System_Init(void)
 	{
         printf("MPU6050 initialization failed\r\n");
         error_code |= ERROR_MPU6050_FAIL;
+		mpu_sample_valid = 0U;
 		system_state = SYS_ERROR;
-		return;
     }
     
     // 2. 初始化超声波
