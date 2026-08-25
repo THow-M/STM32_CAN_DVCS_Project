@@ -57,7 +57,7 @@ typedef struct {
 
 #define MOTOR_MAX_CURRENT     2000
 #define MOTOR_MAX_TEMP        80
-#define MOTOR_MAX_SPEED       1000
+#define MOTOR_MAX_SPEED       2000
 
 // 控制模式
 #define CONTROL_MODE_MANUAL    0

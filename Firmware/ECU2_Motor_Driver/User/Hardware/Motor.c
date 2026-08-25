@@ -159,7 +159,7 @@ void Motor_SetTargetSpeed(float speed_rpm, uint8_t direction)
 
     if (control_mode == CONTROL_MODE_MANUAL)
 	{
-        int16_t pwm = (int16_t)(speed_rpm * 1000.0f / MOTOR_MAX_SPEED);
+        int16_t pwm = (int16_t)(speed_rpm * 7200.0f / MOTOR_MAX_SPEED);
         if (pwm > 1000)
 			pwm = 1000;
         if (pwm < 0)
